@@ -2,7 +2,8 @@ import { useState } from 'react';
 
 interface Props {
   appType: 'user' | 'admin' | 'dev';
-  onLogin: (id: string, password: string) => boolean; // returns false if login fails
+  onLogin: (id: string, password: string) => boolean;
+  onLogoTap?: () => void;
 }
 
 const APP_LABELS = {
@@ -11,7 +12,7 @@ const APP_LABELS = {
   dev: { title: '시설관리 개발자', badge: 'Developer', badgeColor: '#7c3aed' },
 };
 
-export default function PortalLogin({ appType, onLogin }: Props) {
+export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [saveId, setSaveId] = useState(false);
@@ -65,7 +66,8 @@ export default function PortalLogin({ appType, onLogin }: Props) {
         <img
           src="/logo-dark.jpg"
           alt="수원대학교 로고"
-          style={{ width: 88, height: 88, borderRadius: '50%', objectFit: 'cover', marginBottom: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}
+          onClick={onLogoTap}
+          style={{ width: 88, height: 88, borderRadius: '50%', objectFit: 'cover', marginBottom: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.3)', cursor: onLogoTap ? 'pointer' : 'default' }}
         />
         <h1 className="text-white text-lg font-bold mb-0.5">통합 포털 로그인</h1>
         <p className="text-blue-300 text-sm">{label.title}</p>
