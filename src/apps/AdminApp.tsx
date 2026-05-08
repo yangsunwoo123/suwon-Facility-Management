@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SuwonLogo from '../components/SuwonLogo';
 import PortalLogin from '../components/PortalLogin';
 import { CATEGORIES, STATUS_CONFIG } from '../data/campus';
@@ -18,6 +19,7 @@ const ADMIN_ACCOUNTS: { id: string; zone: ZoneId; name: string }[] = [
 ];
 
 export default function AdminApp() {
+  const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>('login');
   const [selectedZone, setSelectedZone] = useState<ZoneId>('C');
   const [adminName, setAdminName] = useState('');
@@ -26,6 +28,22 @@ export default function AdminApp() {
   const [replyText, setReplyText] = useState('');
   const [notification, setNotification] = useState<{ visible: boolean; report: IssueReport | null }>({ visible: false, report: null });
   const [filterStatus, setFilterStatus] = useState<IssueStatus | 'all'>('all');
+
+  // 개발자 모드 진입: 로고 5회 연속 탭
+  const [devTapCount, setDevTapCount] = useState(0);
+  const devTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleDevTap = () => {
+    const next = devTapCount + 1;
+    setDevTapCount(next);
+    if (devTapTimer.current) clearTimeout(devTapTimer.current);
+    if (next >= 5) {
+      setDevTapCount(0);
+      navigate('/dev');
+      return;
+    }
+    devTapTimer.current = setTimeout(() => setDevTapCount(0), 2500);
+  };
 
   // Simulate new notification arriving
   useEffect(() => {
@@ -324,10 +342,20 @@ export default function AdminApp() {
         </div>
       )}
 
+      {/* 개발자 모드 진입 카운트 토스트 */}
+      {devTapCount >= 2 && (
+        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 px-4 py-2 rounded-full text-xs font-bold text-white shadow-lg"
+          style={{ background: 'rgba(0,0,0,0.7)' }}>
+          개발자 모드 진입 중 ({devTapCount}/5)
+        </div>
+      )}
+
       {/* Header */}
       <div className="px-5 pt-12 pb-6" style={{ background: 'linear-gradient(135deg, #0f9d58 0%, #007a40 100%)' }}>
         <div className="flex items-center justify-between mb-4">
-          <SuwonLogo size={36} variant="dark" showText />
+          <button onClick={handleDevTap} className="active:opacity-70 transition-opacity">
+            <SuwonLogo size={36} variant="dark" showText />
+          </button>
           <div className="flex items-center gap-2">
             {urgentCount > 0 && (
               <div className="flex items-center gap-1 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse">
