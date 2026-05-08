@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PortalLogin from '../components/PortalLogin';
 import { CATEGORIES, STATUS_CONFIG, PRIORITY_COLORS } from '../data/campus';
-import { loadReports, updateReport as storeUpdateReport } from '../data/store';
-import type { IssueReport, IssueStatus, ZoneId } from '../data/types';
+import { loadReports, updateReport as storeUpdateReport, loadAnnouncements, addAnnouncement } from '../data/store';
+import type { IssueReport, IssueStatus, ZoneId, Announcement } from '../data/types';
 
 type Screen = 'login' | 'dashboard' | 'list' | 'detail';
 
@@ -18,6 +19,9 @@ const ADMIN_ACCOUNTS: { id: string; zone: ZoneId; name: string }[] = [
 ];
 
 export default function AdminApp() {
+  const navigate = useNavigate();
+  const logoTapTimesRef = useRef<number[]>([]);
+
   const [screen, setScreen] = useState<Screen>('login');
   const [selectedZone, setSelectedZone] = useState<ZoneId>('C');
   const [adminName, setAdminName] = useState('');
@@ -26,6 +30,10 @@ export default function AdminApp() {
   const [replyText, setReplyText] = useState('');
   const [notification, setNotification] = useState<{ visible: boolean; report: IssueReport | null }>({ visible: false, report: null });
   const [filterStatus, setFilterStatus] = useState<IssueStatus | 'all'>('all');
+  const [announcements, setAnnouncements] = useState<Announcement[]>(loadAnnouncements());
+  const [annTitle, setAnnTitle] = useState('');
+  const [annContent, setAnnContent] = useState('');
+  const [showAnnForm, setShowAnnForm] = useState(false);
 
   useEffect(() => {
     if (screen === 'login') return;
@@ -36,6 +44,7 @@ export default function AdminApp() {
         if (newOnes.length > 0) setNotification({ visible: true, report: newOnes[0] });
         return fresh;
       });
+      setAnnouncements(loadAnnouncements());
     };
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
@@ -86,6 +95,32 @@ export default function AdminApp() {
     '보류':   reports.filter(r => r.status === '보류').length,
   }), [reports]);
 
+  const handleLogoTap = () => {
+    const now = Date.now();
+    const recent = [...logoTapTimesRef.current.filter(t => now - t < 5000), now];
+    logoTapTimesRef.current = recent;
+    if (recent.length >= 5) {
+      logoTapTimesRef.current = [];
+      navigate('/dev');
+    }
+  };
+
+  const postAnnouncement = () => {
+    if (!annTitle.trim() || !annContent.trim()) return;
+    addAnnouncement({
+      id: `ANN-${Date.now()}`,
+      title: annTitle.trim(),
+      content: annContent.trim(),
+      author: adminName,
+      authorRole: 'admin',
+      postedAt: new Date().toISOString(),
+    });
+    setAnnouncements(loadAnnouncements());
+    setAnnTitle('');
+    setAnnContent('');
+    setShowAnnForm(false);
+  };
+
   const BackBtn = ({ to }: { to: Screen }) => (
     <button
       onClick={() => setScreen(to)}
@@ -102,7 +137,7 @@ export default function AdminApp() {
   if (screen === 'login') {
     return (
       <div className="app-container">
-        <PortalLogin appType="admin" onLogin={handleAdminLogin} />
+        <PortalLogin appType="admin" onLogin={handleAdminLogin} onLogoTap={handleLogoTap} />
       </div>
     );
   }
@@ -435,7 +470,7 @@ export default function AdminApp() {
       </div>
 
       {/* Recent reports */}
-      <div className="px-4 pt-5 pb-8">
+      <div className="px-4 pt-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-extrabold" style={{ color: '#0f172a' }}>최근 신고</h3>
           <button onClick={() => setScreen('list')} className="text-xs font-bold" style={{ color: PRIMARY }}>
@@ -465,6 +500,72 @@ export default function AdminApp() {
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* Announcements */}
+      <div className="px-4 pt-5 pb-8">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-extrabold" style={{ color: '#0f172a' }}>공지사항 관리</h3>
+          <button
+            onClick={() => setShowAnnForm(v => !v)}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl text-white"
+            style={{ background: PRIMARY }}
+          >
+            {showAnnForm ? '취소' : '+ 공지 작성'}
+          </button>
+        </div>
+
+        {showAnnForm && (
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm mb-3 space-y-3">
+            <input
+              className="w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none transition"
+              style={{ borderColor: annTitle ? PRIMARY : '#e2e8f0', background: '#fafafa' }}
+              placeholder="공지 제목"
+              value={annTitle}
+              onChange={e => setAnnTitle(e.target.value)}
+            />
+            <textarea
+              className="w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none transition resize-none"
+              style={{ borderColor: annContent ? PRIMARY : '#e2e8f0', background: '#fafafa' }}
+              placeholder="공지 내용을 입력하세요..."
+              rows={3}
+              value={annContent}
+              onChange={e => setAnnContent(e.target.value)}
+            />
+            <button
+              onClick={postAnnouncement}
+              disabled={!annTitle.trim() || !annContent.trim()}
+              className="w-full py-2.5 rounded-xl font-bold text-sm text-white transition disabled:opacity-50"
+              style={{ background: PRIMARY }}
+            >
+              공지 게시
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {announcements.length === 0 ? (
+            <div className="text-center py-6 text-sm" style={{ color: '#94a3b8' }}>게시된 공지사항이 없습니다</div>
+          ) : (
+            announcements.slice(0, 5).map(a => (
+              <div key={a.id} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <span className="font-bold text-sm" style={{ color: '#0f172a' }}>{a.title}</span>
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full font-bold flex-shrink-0"
+                    style={{ background: a.authorRole === 'dev' ? '#faf5ff' : '#eff6ff', color: a.authorRole === 'dev' ? '#7c3aed' : PRIMARY }}
+                  >
+                    {a.authorRole === 'dev' ? '개발자' : '관리자'}
+                  </span>
+                </div>
+                <p className="text-xs mb-2 leading-relaxed" style={{ color: '#475569' }}>{a.content}</p>
+                <div className="text-xs" style={{ color: '#94a3b8' }}>
+                  {a.author} · {new Date(a.postedAt).toLocaleDateString('ko-KR')}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -45,6 +45,15 @@ export interface IssueComment {
   createdAt: string;
 }
 
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  authorRole: 'admin' | 'dev';
+  postedAt: string;
+}
+
 export interface LogEntry {
   id: string;
   timestamp: string;

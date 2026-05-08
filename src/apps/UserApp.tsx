@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import PortalLogin from '../components/PortalLogin';
 import { BUILDINGS, CATEGORIES, STATUS_CONFIG, ZONES, PRIORITY_COLORS } from '../data/campus';
-import { loadReports, addReport as storeAddReport } from '../data/store';
-import type { IssueCategory, IssueReport } from '../data/types';
+import { loadReports, addReport as storeAddReport, loadAnnouncements } from '../data/store';
+import type { IssueCategory, IssueReport, Announcement } from '../data/types';
 
-type Screen = 'home' | 'report' | 'myreports' | 'detail' | 'login';
+type Screen = 'home' | 'report' | 'myreports' | 'detail' | 'login' | 'announcements';
 
 const PRIMARY = '#1a56db';
 
@@ -17,6 +17,7 @@ export default function UserApp() {
   const [statusNotif, setStatusNotif] = useState<IssueReport | null>(null);
   const [mapSelected, setMapSelected] = useState<{ building: typeof BUILDINGS[0]; reports: IssueReport[] } | null>(null);
   const [mapZoneFilter, setMapZoneFilter] = useState('ALL');
+  const [announcements, setAnnouncements] = useState<Announcement[]>(loadAnnouncements());
 
   useEffect(() => {
     if (!userName) return;
@@ -32,6 +33,7 @@ export default function UserApp() {
         return myFresh;
       });
       setAllReports(fresh);
+      setAnnouncements(loadAnnouncements());
     };
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
@@ -69,6 +71,7 @@ export default function UserApp() {
       <div className="app-container">
         <PortalLogin
           appType="user"
+          forgotPasswordUrl="https://portal.suwon.ac.kr/enview/index.html"
           onLogin={(id, pw) => {
             if (USER_ACCOUNTS[id] === pw || true) {
               const all = loadReports();
@@ -480,6 +483,58 @@ export default function UserApp() {
     );
   }
 
+  // ── Announcements ─────────────────────────────────────────────
+  if (screen === 'announcements') {
+    return (
+      <div className="app-container flex flex-col min-h-screen" style={{ background: '#f8fafc' }}>
+        <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center gap-3 sticky top-0 z-10">
+          <button
+            onClick={() => setScreen('home')}
+            className="w-9 h-9 rounded-xl flex items-center justify-center"
+            style={{ background: '#f1f5f9' }}
+          >
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#374151" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h2 className="font-extrabold text-lg" style={{ color: '#0f172a' }}>공지사항</h2>
+          <span className="ml-auto text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: '#eff6ff', color: PRIMARY }}>
+            {announcements.length}건
+          </span>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {announcements.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64" style={{ color: '#94a3b8' }}>
+              <div className="text-5xl mb-3">📢</div>
+              <p className="text-sm font-medium">게시된 공지사항이 없습니다</p>
+            </div>
+          ) : (
+            announcements.map(a => (
+              <div key={a.id} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h3 className="font-extrabold text-base leading-snug" style={{ color: '#0f172a' }}>{a.title}</h3>
+                  <span
+                    className="text-xs px-2.5 py-1 rounded-full font-bold flex-shrink-0"
+                    style={{
+                      background: a.authorRole === 'dev' ? '#faf5ff' : '#eff6ff',
+                      color: a.authorRole === 'dev' ? '#7c3aed' : PRIMARY,
+                    }}
+                  >
+                    {a.authorRole === 'dev' ? '개발자' : '관리자'}
+                  </span>
+                </div>
+                <p className="text-sm leading-relaxed mb-3" style={{ color: '#475569' }}>{a.content}</p>
+                <div className="text-xs" style={{ color: '#94a3b8' }}>
+                  {a.author} · {new Date(a.postedAt).toLocaleDateString('ko-KR')}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // ── Home ──────────────────────────────────────────────────────
   const myCount = reports.length;
   const inProgressCount = reports.filter(r => r.status === '처리중').length;
@@ -552,17 +607,22 @@ export default function UserApp() {
 
       {/* Announcement banner */}
       <div className="px-4 pt-4">
-        <div
-          className="rounded-2xl p-4 relative overflow-hidden"
+        <button
+          onClick={() => setScreen('announcements')}
+          className="w-full text-left rounded-2xl p-4 relative overflow-hidden active:scale-98 transition"
           style={{ background: 'linear-gradient(135deg, #1a56db, #003670)' }}
         >
           <div className="absolute right-4 top-1/2 -translate-y-1/2 text-4xl opacity-20">📢</div>
-          <div className="text-xs font-extrabold uppercase tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.65)' }}>공지사항</div>
-          <div className="text-sm font-bold text-white leading-snug">
-            시설 신고는 앱에서 바로 접수 가능합니다.<br />
-            <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400 }}>처리 현황을 실시간으로 확인하세요.</span>
+          <div className="text-xs font-extrabold uppercase tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.65)' }}>
+            공지사항 {announcements.length > 0 ? `(${announcements.length})` : ''}
           </div>
-        </div>
+          <div className="text-sm font-bold text-white leading-snug">
+            {announcements.length > 0
+              ? <>{announcements[0].title}<br /><span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400 }}>탭하여 전체 공지 보기 →</span></>
+              : <>시설 신고는 앱에서 바로 접수 가능합니다.<br /><span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400 }}>처리 현황을 실시간으로 확인하세요.</span></>
+            }
+          </div>
+        </button>
       </div>
 
       {/* Quick category */}
@@ -737,20 +797,13 @@ export default function UserApp() {
         </div>
       </div>
 
-      {/* Bottom sheet */}
+      {/* Inline building report panel */}
       {mapSelected && (
-        <>
-          <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setMapSelected(null)} />
-          <div
-            className="fixed bottom-0 left-1/2 z-50 bg-white rounded-t-3xl shadow-2xl"
-            style={{ width: '100%', maxWidth: 390, transform: 'translateX(-50%)' }}
-          >
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-gray-200" />
-            </div>
-            <div className="px-5 py-3 flex items-center justify-between border-b border-gray-100">
+        <div className="px-4 pt-3">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100">
               <div>
-                <h3 className="font-extrabold" style={{ color: '#0f172a' }}>{mapSelected.building.name}</h3>
+                <h3 className="font-extrabold text-base" style={{ color: '#0f172a' }}>{mapSelected.building.name}</h3>
                 <p className="text-xs mt-0.5" style={{ color: '#94a3b8' }}>신고 {mapSelected.reports.length}건 처리중</p>
               </div>
               <div className="flex items-center gap-2">
@@ -758,7 +811,7 @@ export default function UserApp() {
                   const z = ZONES.find(z => z.id === mapSelected.building.zone);
                   return z ? (
                     <span
-                      className="text-xs font-bold px-2.5 py-1 rounded-full text-white flex-shrink-0"
+                      className="text-xs font-bold px-2.5 py-1 rounded-full text-white"
                       style={{ background: z.color }}
                     >
                       {z.id} {z.name.split('·')[0].replace(' 구역', '').trim()}
@@ -767,12 +820,12 @@ export default function UserApp() {
                 })()}
                 <button
                   onClick={() => setMapSelected(null)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 text-sm flex-shrink-0"
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 text-sm"
                   style={{ background: '#f1f5f9' }}
                 >✕</button>
               </div>
             </div>
-            <div className="overflow-y-auto px-4 py-3 space-y-2" style={{ maxHeight: 320 }}>
+            <div className="px-4 py-3 space-y-2">
               {mapSelected.reports.map(r => {
                 const sc = STATUS_CONFIG[r.status];
                 const cat = CATEGORIES.find(c => c.id === r.category);
@@ -801,9 +854,13 @@ export default function UserApp() {
                 );
               })}
             </div>
-            <div className="px-4 py-4 border-t border-gray-100">
+            <div className="px-4 pb-4">
               <button
-                onClick={() => { setMapSelected(null); setScreen('report'); }}
+                onClick={() => {
+                  setForm(f => ({ ...f, buildingId: mapSelected.building.id }));
+                  setMapSelected(null);
+                  setScreen('report');
+                }}
                 className="w-full py-3 rounded-xl text-sm font-extrabold text-white"
                 style={{ background: PRIMARY }}
               >
@@ -811,7 +868,7 @@ export default function UserApp() {
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Recent reports */}

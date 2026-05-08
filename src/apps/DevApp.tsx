@@ -3,7 +3,8 @@ import PortalLogin from '../components/PortalLogin';
 import { MOCK_LOGS } from '../data/mockData';
 import { MOCK_REPORTS } from '../data/mockData';
 import { ZONES, CATEGORIES, STATUS_CONFIG, PRIORITY_COLORS } from '../data/campus';
-import type { LogEntry } from '../data/types';
+import { loadAnnouncements, addAnnouncement } from '../data/store';
+import type { LogEntry, Announcement } from '../data/types';
 
 type Screen = 'login' | 'dashboard' | 'logs' | 'reports' | 'users' | 'zones';
 
@@ -49,12 +50,38 @@ function BackBtn({ onBack, label, dark = false }: { onBack: () => void; label: s
 }
 
 export default function DevApp() {
-  const [screen, setScreen]     = useState<Screen>('login');
-  const [logs, setLogs]         = useState<LogEntry[]>(MOCK_LOGS);
+  const [screen, setScreen]       = useState<Screen>('login');
+  const [logs, setLogs]           = useState<LogEntry[]>(MOCK_LOGS);
   const [logFilter, setLogFilter] = useState<'ALL' | 'INFO' | 'WARN' | 'ERROR' | 'DEBUG'>('ALL');
-  const [liveMode, setLiveMode] = useState(false);
-  const [uptime]                = useState('7d 14h 23m');
-  const logsEndRef              = useRef<HTMLDivElement>(null);
+  const [liveMode, setLiveMode]   = useState(false);
+  const [uptime]                  = useState('7d 14h 23m');
+  const logsEndRef                = useRef<HTMLDivElement>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>(loadAnnouncements());
+  const [annTitle, setAnnTitle]   = useState('');
+  const [annContent, setAnnContent] = useState('');
+  const [showAnnForm, setShowAnnForm] = useState(false);
+
+  const postAnnouncement = () => {
+    if (!annTitle.trim() || !annContent.trim()) return;
+    addAnnouncement({
+      id: `ANN-${Date.now()}`,
+      title: annTitle.trim(),
+      content: annContent.trim(),
+      author: 'Developer',
+      authorRole: 'dev',
+      postedAt: new Date().toISOString(),
+    });
+    setAnnouncements(loadAnnouncements());
+    setAnnTitle('');
+    setAnnContent('');
+    setShowAnnForm(false);
+  };
+
+  useEffect(() => {
+    const handler = () => setAnnouncements(loadAnnouncements());
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
 
   useEffect(() => {
     if (!liveMode) return;
@@ -438,7 +465,7 @@ export default function DevApp() {
       </div>
 
       {/* Recent logs preview */}
-      <div className="px-4 mt-4 pb-8">
+      <div className="px-4 mt-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-slate-300 text-sm font-bold font-mono">Recent Logs</h3>
           <button onClick={() => setScreen('logs')} className="text-xs font-mono" style={{ color: '#a78bfa' }}>
@@ -467,6 +494,72 @@ export default function DevApp() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Announcements */}
+      <div className="px-4 mt-4 pb-8">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-slate-300 text-sm font-bold font-mono">Announcements</h3>
+          <button
+            onClick={() => setShowAnnForm(v => !v)}
+            className="text-xs font-mono px-3 py-1.5 rounded-full font-bold transition"
+            style={{ background: showAnnForm ? '#374151' : PRIMARY + '30', color: showAnnForm ? '#94a3b8' : '#a78bfa', border: `1px solid ${showAnnForm ? '#374151' : PRIMARY + '60'}` }}
+          >
+            {showAnnForm ? '취소' : '+ 공지 작성'}
+          </button>
+        </div>
+
+        {showAnnForm && (
+          <div className="rounded-2xl p-4 mb-3 space-y-3" style={{ background: '#1e293b', border: '1px solid #2d3748' }}>
+            <input
+              className="w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none font-mono"
+              style={{ background: '#0f172a', borderColor: annTitle ? PRIMARY : '#374151', color: '#e2e8f0' }}
+              placeholder="공지 제목"
+              value={annTitle}
+              onChange={e => setAnnTitle(e.target.value)}
+            />
+            <textarea
+              className="w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none resize-none font-mono"
+              style={{ background: '#0f172a', borderColor: annContent ? PRIMARY : '#374151', color: '#e2e8f0' }}
+              placeholder="공지 내용을 입력하세요..."
+              rows={3}
+              value={annContent}
+              onChange={e => setAnnContent(e.target.value)}
+            />
+            <button
+              onClick={postAnnouncement}
+              disabled={!annTitle.trim() || !annContent.trim()}
+              className="w-full py-2.5 rounded-xl font-bold text-sm font-mono transition disabled:opacity-40"
+              style={{ background: PRIMARY, color: '#fff' }}
+            >
+              공지 게시
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {announcements.length === 0 ? (
+            <div className="text-center py-5 text-xs font-mono" style={{ color: '#475569' }}>No announcements posted</div>
+          ) : (
+            announcements.slice(0, 5).map(a => (
+              <div key={a.id} className="rounded-2xl p-3.5" style={{ background: '#1e293b', border: '1px solid #2d3748' }}>
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <span className="font-bold text-sm text-slate-200">{a.title}</span>
+                  <span
+                    className="text-xs px-2 py-0.5 rounded font-mono font-bold flex-shrink-0"
+                    style={{ background: a.authorRole === 'dev' ? PRIMARY + '30' : '#1a56db30', color: a.authorRole === 'dev' ? '#a78bfa' : '#60a5fa' }}
+                  >
+                    {a.authorRole === 'dev' ? 'DEV' : 'ADMIN'}
+                  </span>
+                </div>
+                <p className="text-xs mb-2 leading-relaxed" style={{ color: '#94a3b8' }}>{a.content}</p>
+                <div className="text-xs font-mono" style={{ color: '#475569' }}>
+                  {a.author} · {new Date(a.postedAt).toLocaleDateString('ko-KR')}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

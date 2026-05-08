@@ -4,6 +4,7 @@ interface Props {
   appType: 'user' | 'admin' | 'dev';
   onLogin: (id: string, password: string) => boolean;
   onLogoTap?: () => void;
+  forgotPasswordUrl?: string;
 }
 
 const APP_LABELS = {
@@ -14,7 +15,7 @@ const APP_LABELS = {
 
 const SAVE_ID_KEY = (appType: string) => `portal_saved_id_${appType}`;
 
-export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
+export default function PortalLogin({ appType, onLogin, onLogoTap, forgotPasswordUrl }: Props) {
   const [userId, setUserId]     = useState('');
   const [password, setPassword] = useState('');
   const [saveId, setSaveId]     = useState(false);
@@ -223,7 +224,11 @@ export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
             <div className="flex items-center justify-center gap-1 text-xs text-gray-400">
               <button className="hover:text-gray-600 transition py-1 px-2">아이디 찾기</button>
               <span>|</span>
-              <button className="hover:text-gray-600 transition py-1 px-2">비밀번호 찾기</button>
+              <button
+                className="hover:text-gray-600 transition py-1 px-2"
+                onClick={() => forgotPasswordUrl && window.open(forgotPasswordUrl, '_blank')}
+                style={forgotPasswordUrl ? { cursor: 'pointer' } : {}}
+              >비밀번호 찾기</button>
               <span>|</span>
               <button className="hover:text-gray-600 transition py-1 px-2">계정 문의</button>
             </div>

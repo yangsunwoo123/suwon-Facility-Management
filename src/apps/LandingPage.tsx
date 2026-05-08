@@ -26,17 +26,6 @@ export default function LandingPage() {
       bg: '#f0fdf4',
       border: '#bbf7d0',
     },
-    {
-      path: '/dev',
-      icon: '⚙️',
-      title: '개발자 앱',
-      subtitle: 'DEVELOPER APP',
-      description: '시스템 전반을 모니터링하고 서비스 헬스와 실시간 로그를 확인하세요.',
-      features: ['실시간 로그 스트리밍', '구역 · 사용자 관리', '마이크로서비스 헬스', '시스템 대시보드'],
-      color: '#7c3aed',
-      bg: '#faf5ff',
-      border: '#e9d5ff',
-    },
   ];
 
   return (

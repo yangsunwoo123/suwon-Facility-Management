@@ -1,5 +1,5 @@
 import { MOCK_REPORTS } from './mockData';
-import type { IssueReport } from './types';
+import type { IssueReport, Announcement } from './types';
 
 const KEY = 'suwon_reports';
 
@@ -32,4 +32,30 @@ export function addReport(report: IssueReport): void {
 
 export function updateReport(id: string, updates: Partial<IssueReport>): void {
   saveReports(loadReports().map(r => r.id === id ? { ...r, ...updates } : r));
+}
+
+// ── Announcements ────────────────────────────────────────────────
+const ANN_KEY = 'suwon_announcements';
+
+export function loadAnnouncements(): Announcement[] {
+  try {
+    const raw = localStorage.getItem(ANN_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAnnouncements(list: Announcement[]): void {
+  localStorage.setItem(ANN_KEY, JSON.stringify(list));
+  // storage 이벤트는 다른 탭에서만 발화하므로 같은 탭을 위해 수동 dispatch
+  window.dispatchEvent(new StorageEvent('storage', { key: ANN_KEY }));
+}
+
+export function addAnnouncement(a: Announcement): void {
+  saveAnnouncements([a, ...loadAnnouncements()]);
+}
+
+export function deleteAnnouncement(id: string): void {
+  saveAnnouncements(loadAnnouncements().filter(a => a.id !== id));
 }
