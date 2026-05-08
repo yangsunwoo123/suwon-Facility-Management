@@ -202,14 +202,6 @@ export default function PortalLogin({ appType, onLogin }: Props) {
           </div>
         </div>
 
-        {/* Hint box */}
-        <div className="mt-4 px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
-          <p className="text-blue-200 text-xs text-center leading-relaxed">
-            {appType === 'user' && '수원대학교 포털 계정(학번/교번)으로 로그인하세요\n(데모: 아무 아이디 + 비밀번호 입력)'}
-            {appType === 'admin' && '관리자 계정으로 로그인하세요\n(데모: mgr_a ~ mgr_f / 비밀번호: 1234)'}
-            {appType === 'dev' && '개발자 계정으로 로그인하세요\n(데모: dev / 비밀번호: dev2024)'}
-          </p>
-        </div>
       </div>
 
       {/* Bottom safe area */}
