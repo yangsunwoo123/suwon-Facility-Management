@@ -48,6 +48,12 @@ export const CATEGORIES = [
   { id: '기타', icon: '📋', color: '#6b7280' },
 ];
 
+export const PRIORITY_COLORS: Record<'low' | 'medium' | 'high', string> = {
+  low: '#6b7280',
+  medium: '#d97706',
+  high: '#dc2626',
+};
+
 export const STATUS_CONFIG = {
   '접수됨': { color: '#6b7280', bg: '#f3f4f6', label: '접수됨' },
   '처리중': { color: '#d97706', bg: '#fef3c7', label: '처리중' },

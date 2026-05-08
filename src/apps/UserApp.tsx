@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import SuwonLogo from '../components/SuwonLogo';
 import PortalLogin from '../components/PortalLogin';
-import { BUILDINGS, CATEGORIES, STATUS_CONFIG, ZONES } from '../data/campus';
+import { BUILDINGS, CATEGORIES, STATUS_CONFIG, ZONES, PRIORITY_COLORS } from '../data/campus';
 import { loadReports, addReport as storeAddReport } from '../data/store';
 import type { IssueCategory, IssueReport } from '../data/types';
 
@@ -36,6 +36,14 @@ export default function UserApp() {
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
   }, [userName]);
+
+  const reportsByBuilding = useMemo(() =>
+    BUILDINGS.reduce<Record<string, IssueReport[]>>((acc, b) => {
+      const active = allReports.filter(r => r.buildingId === b.id && r.status !== '완료');
+      if (active.length > 0) acc[b.id] = active;
+      return acc;
+    }, {}),
+  [allReports]);
 
   // New report form state
   const [form, setForm] = useState({
@@ -369,13 +377,6 @@ export default function UserApp() {
   const inProgressCount = reports.filter(r => r.status === '처리중').length;
   const completedCount = reports.filter(r => r.status === '완료').length;
 
-  // 건물별 미해결 신고 묶기
-  const reportsByBuilding = BUILDINGS.reduce<Record<string, IssueReport[]>>((acc, b) => {
-    const active = allReports.filter(r => r.buildingId === b.id && r.status !== '완료');
-    if (active.length > 0) acc[b.id] = active;
-    return acc;
-  }, {});
-
   return (
     <div className="app-container flex flex-col min-h-screen bg-gray-50">
       {/* 관리자 처리 알림 배너 */}
@@ -568,7 +569,7 @@ export default function UserApp() {
                 const sc = STATUS_CONFIG[r.status];
                 const cat = CATEGORIES.find(c => c.id === r.category);
                 const priorityLabel = r.priority === 'high' ? '긴급' : r.priority === 'medium' ? '보통' : '낮음';
-                const priorityColor = r.priority === 'high' ? '#dc2626' : r.priority === 'medium' ? '#d97706' : '#6b7280';
+                const priorityColor = PRIORITY_COLORS[r.priority];
                 return (
                   <div
                     key={r.id}

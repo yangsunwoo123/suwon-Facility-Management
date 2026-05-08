@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import SuwonLogo from '../components/SuwonLogo';
 import PortalLogin from '../components/PortalLogin';
-import { CATEGORIES, STATUS_CONFIG } from '../data/campus';
+import { CATEGORIES, STATUS_CONFIG, PRIORITY_COLORS } from '../data/campus';
 import { loadReports, updateReport as storeUpdateReport } from '../data/store';
 import type { IssueReport, IssueStatus, ZoneId } from '../data/types';
 
@@ -86,12 +86,12 @@ export default function AdminApp() {
 
   const filteredReports = filterStatus === 'all' ? reports : reports.filter(r => r.status === filterStatus);
 
-  const statusCounts = {
+  const statusCounts = useMemo(() => ({
     '접수됨': reports.filter(r => r.status === '접수됨').length,
     '처리중': reports.filter(r => r.status === '처리중').length,
     '완료': reports.filter(r => r.status === '완료').length,
     '보류': reports.filter(r => r.status === '보류').length,
-  };
+  }), [reports]);
 
   // ── Login ────────────────────────────────────────────────────
   if (screen === 'login') {
@@ -107,7 +107,6 @@ export default function AdminApp() {
     const sc = STATUS_CONFIG[selectedReport.status];
     const cat = CATEGORIES.find(c => c.id === selectedReport.category);
     const r = reports.find(r => r.id === selectedReport.id) || selectedReport;
-    const priorityColors = { low: '#6b7280', medium: '#d97706', high: '#dc2626' };
 
     return (
       <div className="app-container flex flex-col min-h-screen bg-gray-50">
@@ -129,7 +128,7 @@ export default function AdminApp() {
             </div>
             <div className="flex gap-2 flex-wrap">
               <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: sc.bg, color: sc.color }}>{r.status}</span>
-              <span className="text-xs px-2.5 py-1 rounded-full font-medium text-white" style={{ background: priorityColors[r.priority] }}>
+              <span className="text-xs px-2.5 py-1 rounded-full font-medium text-white" style={{ background: PRIORITY_COLORS[r.priority] }}>
                 {r.priority === 'high' ? '🔴 긴급' : r.priority === 'medium' ? '🟡 보통' : '🟢 낮음'}
               </span>
             </div>
@@ -259,7 +258,6 @@ export default function AdminApp() {
             filteredReports.map(report => {
               const sc = STATUS_CONFIG[report.status];
               const cat = CATEGORIES.find(c => c.id === report.category);
-              const priorityColors = { low: '#6b7280', medium: '#d97706', high: '#dc2626' };
               return (
                 <button
                   key={report.id}
@@ -275,7 +273,7 @@ export default function AdminApp() {
                     </div>
                     <div className="flex gap-1.5">
                       {report.priority === 'high' && (
-                        <span className="text-xs px-1.5 py-0.5 rounded font-medium text-white" style={{ background: priorityColors.high }}>긴급</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded font-medium text-white" style={{ background: PRIORITY_COLORS.high }}>긴급</span>
                       )}
                       <span className="text-xs px-2.5 py-0.5 rounded-full font-medium" style={{ background: sc.bg, color: sc.color }}>{report.status}</span>
                     </div>

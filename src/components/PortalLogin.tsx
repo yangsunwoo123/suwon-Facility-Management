@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Props {
   appType: 'user' | 'admin' | 'dev';
@@ -12,10 +12,20 @@ const APP_LABELS = {
   dev: { title: '시설관리 개발자', badge: 'Developer', badgeColor: '#7c3aed' },
 };
 
+const SAVE_ID_KEY = (appType: string) => `portal_saved_id_${appType}`;
+
 export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [saveId, setSaveId] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(SAVE_ID_KEY(appType));
+    if (saved) {
+      setUserId(saved);
+      setSaveId(true);
+    }
+  }, [appType]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
@@ -32,7 +42,10 @@ export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
     // Simulate network delay
     await new Promise(r => setTimeout(r, 600));
     const ok = onLogin(userId.trim(), password.trim());
-    if (!ok) {
+    if (ok) {
+      if (saveId) localStorage.setItem(SAVE_ID_KEY(appType), userId.trim());
+      else localStorage.removeItem(SAVE_ID_KEY(appType));
+    } else {
       setError('아이디 또는 비밀번호가 올바르지 않습니다.\n입력하신 내용을 다시 확인해 주세요.');
     }
     setLoading(false);

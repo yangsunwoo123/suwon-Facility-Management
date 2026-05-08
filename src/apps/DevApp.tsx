@@ -3,7 +3,7 @@ import SuwonLogo from '../components/SuwonLogo';
 import PortalLogin from '../components/PortalLogin';
 import { MOCK_LOGS } from '../data/mockData';
 import { MOCK_REPORTS } from '../data/mockData';
-import { ZONES, CATEGORIES, STATUS_CONFIG } from '../data/campus';
+import { ZONES, CATEGORIES, STATUS_CONFIG, PRIORITY_COLORS } from '../data/campus';
 import type { LogEntry } from '../data/types';
 
 type Screen = 'login' | 'dashboard' | 'logs' | 'reports' | 'users' | 'zones';
@@ -166,7 +166,6 @@ export default function DevApp() {
             const sc = STATUS_CONFIG[r.status];
             const cat = CATEGORIES.find(c => c.id === r.category);
             const zone = ZONES.find(z => z.id === r.zone);
-            const priorityColors = { low: '#6b7280', medium: '#d97706', high: '#dc2626' };
             return (
               <div key={r.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                 <div className="flex items-start justify-between mb-2">
@@ -175,7 +174,7 @@ export default function DevApp() {
                     <span className="font-mono text-xs text-gray-400">{r.id}</span>
                   </div>
                   <div className="flex gap-1.5">
-                    <span className="text-xs px-1.5 py-0.5 rounded font-bold text-white" style={{ background: priorityColors[r.priority] }}>
+                    <span className="text-xs px-1.5 py-0.5 rounded font-bold text-white" style={{ background: PRIORITY_COLORS[r.priority] }}>
                       {r.priority === 'high' ? 'HIGH' : r.priority === 'medium' ? 'MED' : 'LOW'}
                     </span>
                     <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: sc.bg, color: sc.color }}>{r.status}</span>
