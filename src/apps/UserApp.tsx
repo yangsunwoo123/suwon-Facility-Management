@@ -312,41 +312,43 @@ export default function UserApp() {
 
   // ── Detail ──────────────────────────────────────────────────────
   if (screen === 'detail' && selectedReport) {
-    const sc = STATUS_CONFIG[selectedReport.status];
-    const cat = CATEGORIES.find(c => c.id === selectedReport.category);
-    const zone = ZONES.find(z => z.id === selectedReport.zone);
+    // reports 상태(localStorage 갱신 반영)에서 최신 버전을 가져옴
+    const r = reports.find(r => r.id === selectedReport.id) ?? selectedReport;
+    const sc = STATUS_CONFIG[r.status];
+    const cat = CATEGORIES.find(c => c.id === r.category);
+    const zone = ZONES.find(z => z.id === r.zone);
     return (
       <div className="app-container flex flex-col min-h-screen">
         <div className="flex items-center gap-3 px-4 py-4" style={{ background: '#003670' }}>
           <button onClick={() => setScreen('myreports')} className="text-white text-xl">←</button>
           <h2 className="text-white font-bold text-lg">신고 상세</h2>
-          <span className="ml-auto text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: sc.bg, color: sc.color }}>{selectedReport.status}</span>
+          <span className="ml-auto text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: sc.bg, color: sc.color }}>{r.status}</span>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {selectedReport.imageUrl && (
-            <img src={selectedReport.imageUrl} alt="신고 사진" className="w-full h-48 object-cover rounded-2xl" />
+          {r.imageUrl && (
+            <img src={r.imageUrl} alt="신고 사진" className="w-full h-48 object-cover rounded-2xl" />
           )}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xl">{cat?.icon}</span>
-              <span className="text-xs px-2 py-0.5 rounded-full text-white font-medium" style={{ background: cat?.color }}>{selectedReport.category}</span>
+              <span className="text-xs px-2 py-0.5 rounded-full text-white font-medium" style={{ background: cat?.color }}>{r.category}</span>
             </div>
-            <h3 className="font-bold text-gray-800 mb-3">{selectedReport.title}</h3>
+            <h3 className="font-bold text-gray-800 mb-3">{r.title}</h3>
             <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex gap-2"><span className="text-gray-400 w-16">건물</span><span className="font-medium">{selectedReport.buildingName}</span></div>
-              {selectedReport.location && <div className="flex gap-2"><span className="text-gray-400 w-16">위치</span><span>{selectedReport.location}</span></div>}
+              <div className="flex gap-2"><span className="text-gray-400 w-16">건물</span><span className="font-medium">{r.buildingName}</span></div>
+              {r.location && <div className="flex gap-2"><span className="text-gray-400 w-16">위치</span><span>{r.location}</span></div>}
               {zone && <div className="flex gap-2"><span className="text-gray-400 w-16">담당</span><span className="font-medium" style={{ color: zone.color }}>{zone.adminName}</span></div>}
-              <div className="flex gap-2"><span className="text-gray-400 w-16">접수일</span><span>{new Date(selectedReport.reportedAt).toLocaleString('ko-KR')}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-16">접수일</span><span>{new Date(r.reportedAt).toLocaleString('ko-KR')}</span></div>
             </div>
-            {selectedReport.description && (
-              <p className="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-xl">{selectedReport.description}</p>
+            {r.description && (
+              <p className="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-xl">{r.description}</p>
             )}
           </div>
 
-          {selectedReport.comments.length > 0 && (
+          {r.comments.length > 0 && (
             <div>
               <h4 className="text-sm font-bold text-gray-700 mb-2">관리팀 답변</h4>
-              {selectedReport.comments.map(c => (
+              {r.comments.map(c => (
                 <div key={c.id} className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-bold text-blue-700">{c.author}</span>
