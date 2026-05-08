@@ -719,48 +719,68 @@ export default function UserApp() {
                       style={{ left: `${b.x}%`, top: `${b.y}%`, transform: 'translate(-50%, -50%)' }}
                     >
                       <span className="relative inline-flex items-center justify-center">
-                        {/* Pulse ring for buildings with active reports */}
-                        {hasReports && (
-                          <span
-                            className="absolute rounded-full animate-ping"
-                            style={{ width: 10, height: 10, background: '#ef4444', opacity: 0.35 }}
-                          />
-                        )}
-                        {/* Zone-colored pill */}
-                        <span
-                          className="relative flex items-center gap-1 font-bold whitespace-nowrap"
-                          style={{
-                            fontSize: 8.5,
-                            background: 'white',
-                            borderRadius: 20,
-                            padding: '2px 6px 2px 4px',
-                            color: hasReports ? zone.color : '#374151',
-                            border: hasReports ? `1.5px solid ${zone.color}` : '1px solid rgba(0,0,0,0.1)',
-                            boxShadow: hasReports
-                              ? `0 1px 5px rgba(0,0,0,0.18)`
-                              : '0 1px 3px rgba(0,0,0,0.1)',
-                          }}
-                        >
-                          <span
-                            className="rounded-full flex-shrink-0"
-                            style={{ width: 6, height: 6, background: zone.color }}
-                          />
-                          {b.name}
-                          {hasReports && (
+                        {mapZoneFilter === 'ALL' ? (
+                          /* ALL 뷰: 점 + 신고 배지만 표시 */
+                          <>
+                            {hasReports && (
+                              <span
+                                className="absolute rounded-full animate-ping"
+                                style={{ width: 12, height: 12, background: '#ef4444', opacity: 0.4 }}
+                              />
+                            )}
                             <span
-                              className="inline-flex items-center justify-center rounded-full text-white font-extrabold flex-shrink-0"
+                              className="relative rounded-full flex items-center justify-center"
                               style={{
-                                width: 14, height: 14,
-                                background: '#ef4444',
-                                fontSize: 7,
+                                width: hasReports ? 10 : 8,
+                                height: hasReports ? 10 : 8,
+                                background: hasReports ? '#ef4444' : zone.color,
                                 border: '1.5px solid white',
-                                marginLeft: 1,
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                              }}
+                            />
+                            {hasReports && (
+                              <span
+                                className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full text-white font-extrabold"
+                                style={{ width: 13, height: 13, background: '#ef4444', fontSize: 7, border: '1.5px solid white' }}
+                              >
+                                {active.length}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          /* 구역 필터 뷰: 풀 라벨 표시 */
+                          <>
+                            {hasReports && (
+                              <span
+                                className="absolute rounded-full animate-ping"
+                                style={{ width: 10, height: 10, background: '#ef4444', opacity: 0.35 }}
+                              />
+                            )}
+                            <span
+                              className="relative flex items-center gap-1 font-bold whitespace-nowrap"
+                              style={{
+                                fontSize: 8.5,
+                                background: 'white',
+                                borderRadius: 20,
+                                padding: '2px 6px 2px 4px',
+                                color: hasReports ? zone.color : '#374151',
+                                border: hasReports ? `1.5px solid ${zone.color}` : '1px solid rgba(0,0,0,0.1)',
+                                boxShadow: hasReports ? '0 1px 5px rgba(0,0,0,0.18)' : '0 1px 3px rgba(0,0,0,0.1)',
                               }}
                             >
-                              {active.length}
+                              <span className="rounded-full flex-shrink-0" style={{ width: 6, height: 6, background: zone.color }} />
+                              {b.name}
+                              {hasReports && (
+                                <span
+                                  className="inline-flex items-center justify-center rounded-full text-white font-extrabold flex-shrink-0"
+                                  style={{ width: 14, height: 14, background: '#ef4444', fontSize: 7, border: '1.5px solid white', marginLeft: 1 }}
+                                >
+                                  {active.length}
+                                </span>
+                              )}
                             </span>
-                          )}
-                        </span>
+                          </>
+                        )}
                       </span>
                     </button>
                   );
@@ -768,30 +788,37 @@ export default function UserApp() {
             </div>
           </div>
 
-          {/* Zone legend — tap to filter */}
-          <div
-            className="px-3 py-2 flex items-center gap-3 border-t border-gray-50 overflow-x-auto"
-            style={{ scrollbarWidth: 'none' }}
-          >
-            {ZONES.map(z => (
-              <button
-                key={z.id}
-                onClick={() => setMapZoneFilter(prev => prev === z.id ? 'ALL' : z.id)}
-                className="flex items-center gap-1 flex-shrink-0 active:scale-95 transition-transform"
-              >
-                <span className="rounded-full" style={{ width: 8, height: 8, background: z.color }} />
-                <span
-                  className="text-xs font-medium"
-                  style={{ color: mapZoneFilter === z.id ? z.color : '#94a3b8' }}
+          {/* Zone legend + hint */}
+          <div className="border-t border-gray-50">
+            <div
+              className="px-3 py-2 flex items-center gap-3 overflow-x-auto"
+              style={{ scrollbarWidth: 'none' }}
+            >
+              {ZONES.map(z => (
+                <button
+                  key={z.id}
+                  onClick={() => setMapZoneFilter(prev => prev === z.id ? 'ALL' : z.id)}
+                  className="flex items-center gap-1 flex-shrink-0 active:scale-95 transition-transform"
                 >
-                  {z.name.split('·')[0].replace(' 구역', '').trim()}
-                </span>
-              </button>
-            ))}
-            <div className="flex items-center gap-1 ml-auto flex-shrink-0">
-              <span className="rounded-full" style={{ width: 8, height: 8, background: '#ef4444' }} />
-              <span className="text-xs font-medium" style={{ color: '#ef4444' }}>신고중</span>
+                  <span className="rounded-full" style={{ width: 8, height: 8, background: z.color }} />
+                  <span
+                    className="text-xs font-medium"
+                    style={{ color: mapZoneFilter === z.id ? z.color : '#94a3b8' }}
+                  >
+                    {z.name.split('·')[0].replace(' 구역', '').trim()}
+                  </span>
+                </button>
+              ))}
+              <div className="flex items-center gap-1 ml-auto flex-shrink-0">
+                <span className="rounded-full" style={{ width: 8, height: 8, background: '#ef4444' }} />
+                <span className="text-xs font-medium" style={{ color: '#ef4444' }}>신고중</span>
+              </div>
             </div>
+            {mapZoneFilter === 'ALL' && (
+              <div className="px-3 pb-2 text-xs" style={{ color: '#94a3b8' }}>
+                구역 탭을 선택하면 건물명을 확인할 수 있습니다
+              </div>
+            )}
           </div>
 
         </div>
