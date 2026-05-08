@@ -26,6 +26,17 @@ export default function LandingPage() {
       accent: '#E9B800',
       textColor: '#fff',
     },
+    {
+      path: '/dev',
+      icon: '⚙️',
+      title: '개발자 앱',
+      subtitle: 'Developer App',
+      description: '시스템 모니터링 및 백엔드 관리',
+      features: ['📊 실시간 로그', '🗺️ 구역 관리', '👥 사용자 관리', '🔍 시스템 헬스체크'],
+      gradient: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+      accent: '#a855f7',
+      textColor: '#fff',
+    },
   ];
 
   return (
