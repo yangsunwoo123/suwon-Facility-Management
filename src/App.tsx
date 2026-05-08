@@ -4,6 +4,7 @@ import LandingPage from './apps/LandingPage';
 import UserApp from './apps/UserApp';
 import AdminApp from './apps/AdminApp';
 import DevApp from './apps/DevApp';
+import FacilityApp from './apps/FacilityApp';
 
 initStore();
 
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/user" element={<UserApp />} />
         <Route path="/admin" element={<AdminApp />} />
         <Route path="/dev" element={<DevApp />} />
+        <Route path="/facility" element={<FacilityApp />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

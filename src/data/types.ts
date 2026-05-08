@@ -62,3 +62,43 @@ export interface LogEntry {
   message: string;
   userId?: string;
 }
+
+// ── Facility Rental ──────────────────────────────────────────────
+export type FacilityCategory = '강의실' | '세미나실' | '체육관' | '회의실' | '공연장' | '실습실' | '야외';
+export type ApplicationStatus = '검토중' | '승인' | '반려' | '취소';
+
+export interface Facility {
+  id: string;
+  name: string;
+  buildingId: string;
+  buildingName: string;
+  zone: ZoneId;
+  category: FacilityCategory;
+  capacity: number;
+  floor: string;
+  description: string;
+  rules: string[];
+  features: string[];
+  imageEmoji: string;
+  availableStart: string; // 'HH:MM'
+  availableEnd: string;   // 'HH:MM'
+}
+
+export interface FacilityApplication {
+  id: string;
+  facilityId: string;
+  facilityName: string;
+  buildingName: string;
+  date: string;       // 'YYYY-MM-DD'
+  startTime: string;  // 'HH:MM'
+  endTime: string;    // 'HH:MM'
+  purpose: string;
+  attendees: number;
+  applicantId: string;
+  applicantName: string;
+  status: ApplicationStatus;
+  appliedAt: string;
+  updatedAt: string;
+  rejectReason?: string;
+  notes?: string;
+}

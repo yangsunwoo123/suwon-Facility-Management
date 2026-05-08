@@ -1,5 +1,6 @@
 import { MOCK_REPORTS } from './mockData';
-import type { IssueReport, Announcement } from './types';
+import { MOCK_FACILITY_APPLICATIONS } from './facilityData';
+import type { IssueReport, Announcement, FacilityApplication } from './types';
 
 const KEY = 'suwon_reports';
 
@@ -58,4 +59,34 @@ export function addAnnouncement(a: Announcement): void {
 
 export function deleteAnnouncement(id: string): void {
   saveAnnouncements(loadAnnouncements().filter(a => a.id !== id));
+}
+
+// ── Facility Applications ────────────────────────────────────────
+const FA_KEY = 'suwon_facility_apps';
+
+export function loadFacilityApplications(): FacilityApplication[] {
+  try {
+    const raw = localStorage.getItem(FA_KEY);
+    if (raw) return JSON.parse(raw);
+    // 최초 로드 시 Mock 데이터 저장
+    localStorage.setItem(FA_KEY, JSON.stringify(MOCK_FACILITY_APPLICATIONS));
+    return MOCK_FACILITY_APPLICATIONS;
+  } catch {
+    return MOCK_FACILITY_APPLICATIONS;
+  }
+}
+
+function saveFacilityApplications(apps: FacilityApplication[]): void {
+  localStorage.setItem(FA_KEY, JSON.stringify(apps));
+  window.dispatchEvent(new StorageEvent('storage', { key: FA_KEY }));
+}
+
+export function addFacilityApplication(app: FacilityApplication): void {
+  saveFacilityApplications([app, ...loadFacilityApplications()]);
+}
+
+export function updateFacilityApplication(id: string, updates: Partial<FacilityApplication>): void {
+  saveFacilityApplications(
+    loadFacilityApplications().map(a => a.id === id ? { ...a, ...updates } : a)
+  );
 }
