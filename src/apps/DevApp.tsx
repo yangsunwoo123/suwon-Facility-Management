@@ -1,0 +1,448 @@
+import { useState, useEffect, useRef } from 'react';
+import SuwonLogo from '../components/SuwonLogo';
+import PortalLogin from '../components/PortalLogin';
+import { MOCK_LOGS } from '../data/mockData';
+import { MOCK_REPORTS } from '../data/mockData';
+import { ZONES, CATEGORIES, STATUS_CONFIG } from '../data/campus';
+import type { LogEntry } from '../data/types';
+
+type Screen = 'login' | 'dashboard' | 'logs' | 'reports' | 'users' | 'zones';
+
+const ADMIN_USERS = [
+  { zone: 'A', name: '공학관 관리팀',    status: '온라인',   lastLogin: '10분 전' },
+  { zone: 'B', name: '혁신·연구 관리팀', status: '오프라인', lastLogin: '2시간 전' },
+  { zone: 'C', name: '학생복지 관리팀',  status: '온라인',   lastLogin: '5분 전' },
+  { zone: 'D', name: '예술·문화 관리팀', status: '온라인',   lastLogin: '30분 전' },
+  { zone: 'E', name: '인문·글로벌 관리팀', status: '오프라인', lastLogin: '1일 전' },
+  { zone: 'F', name: '본부 관리팀',      status: '온라인',   lastLogin: '방금' },
+];
+
+export default function DevApp() {
+  const [screen, setScreen] = useState<Screen>('login');
+  const [logs, setLogs] = useState<LogEntry[]>(MOCK_LOGS);
+  const [logFilter, setLogFilter] = useState<'ALL' | 'INFO' | 'WARN' | 'ERROR' | 'DEBUG'>('ALL');
+  const [liveMode, setLiveMode] = useState(false);
+  const [uptime] = useState('7d 14h 23m');
+  const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // Simulate live log streaming
+  useEffect(() => {
+    if (!liveMode) return;
+    const services = ['auth-service', 'report-service', 'notification-service', 'api-gateway'];
+    const interval = setInterval(() => {
+      const newLog: LogEntry = {
+        id: `LOG-LIVE-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        level: Math.random() > 0.85 ? (Math.random() > 0.5 ? 'ERROR' : 'WARN') : 'INFO',
+        service: services[Math.floor(Math.random() * services.length)],
+        message: [
+          'API request processed in 42ms',
+          'Push notification sent successfully',
+          'User session validated',
+          'Report status updated to 처리중',
+          'Database connection pool: 8/20',
+          'Cache invalidated for zone-C reports',
+          'File upload completed: 2.3MB',
+          'Admin zone-A logged in',
+        ][Math.floor(Math.random() * 8)],
+      };
+      setLogs(prev => [newLog, ...prev.slice(0, 99)]);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [liveMode]);
+
+  useEffect(() => {
+    if (liveMode && logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs, liveMode]);
+
+  const handleDevLogin = (id: string, pw: string): boolean => {
+    if ((id === 'dev' || id === 'developer') && (pw === 'dev2024' || pw === 'admin')) {
+      setScreen('dashboard');
+      return true;
+    }
+    return false;
+  };
+
+  const filteredLogs = logFilter === 'ALL' ? logs : logs.filter(l => l.level === logFilter);
+
+  const logLevelColor = {
+    INFO: { text: '#2563eb', bg: '#eff6ff' },
+    WARN: { text: '#d97706', bg: '#fffbeb' },
+    ERROR: { text: '#dc2626', bg: '#fef2f2' },
+    DEBUG: { text: '#6b7280', bg: '#f3f4f6' },
+  };
+
+  const reportsByZone = ZONES.map(z => ({
+    zone: z,
+    count: MOCK_REPORTS.filter(r => r.zone === z.id).length,
+    completed: MOCK_REPORTS.filter(r => r.zone === z.id && r.status === '완료').length,
+  }));
+
+  // ── Login ─────────────────────────────────────────────────────
+  if (screen === 'login') {
+    return (
+      <div className="app-container">
+        <PortalLogin appType="dev" onLogin={handleDevLogin} />
+      </div>
+    );
+  }
+
+  // ── Logs ──────────────────────────────────────────────────────
+  if (screen === 'logs') {
+    return (
+      <div className="app-container flex flex-col min-h-screen" style={{ background: '#0f172a' }}>
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
+          <button onClick={() => setScreen('dashboard')} className="text-slate-400 text-xl">←</button>
+          <h2 className="text-white font-bold text-lg font-mono">System Logs</h2>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => setLiveMode(l => !l)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition"
+              style={liveMode
+                ? { background: '#16a34a20', color: '#4ade80', border: '1px solid #16a34a' }
+                : { background: '#ffffff10', color: '#9ca3af', border: '1px solid #374151' }
+              }
+            >
+              {liveMode && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />}
+              {liveMode ? 'LIVE' : 'LIVE OFF'}
+            </button>
+          </div>
+        </div>
+
+        {/* Level filter */}
+        <div className="px-4 py-2 flex gap-2 overflow-x-auto border-b border-white/5">
+          {(['ALL', 'INFO', 'WARN', 'ERROR', 'DEBUG'] as const).map(lvl => (
+            <button
+              key={lvl}
+              onClick={() => setLogFilter(lvl)}
+              className="px-3 py-1 rounded text-xs font-mono font-bold whitespace-nowrap"
+              style={logFilter === lvl
+                ? { background: lvl === 'ALL' ? '#7c3aed' : logLevelColor[lvl]?.bg, color: lvl === 'ALL' ? '#fff' : logLevelColor[lvl]?.text }
+                : { background: '#1e293b', color: '#64748b' }
+              }
+            >
+              {lvl}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 space-y-1">
+          {filteredLogs.map(log => {
+            const lc = logLevelColor[log.level];
+            return (
+              <div key={log.id} className="rounded-lg p-2.5 border" style={{ background: '#1e293b', borderColor: '#2d3748' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold font-mono px-1.5 py-0.5 rounded" style={{ background: lc.bg, color: lc.text }}>
+                    {log.level}
+                  </span>
+                  <span className="text-xs text-slate-500 font-mono">{log.service}</span>
+                  <span className="ml-auto text-xs text-slate-600 font-mono">
+                    {new Date(log.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-300 font-mono leading-relaxed">{log.message}</p>
+                {log.userId && <span className="text-xs text-purple-400 font-mono">uid:{log.userId}</span>}
+              </div>
+            );
+          })}
+          <div ref={logsEndRef} />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Reports overview ──────────────────────────────────────────
+  if (screen === 'reports') {
+    return (
+      <div className="app-container flex flex-col min-h-screen bg-gray-50">
+        <div className="flex items-center gap-3 px-4 py-4" style={{ background: '#1e293b' }}>
+          <button onClick={() => setScreen('dashboard')} className="text-slate-300 text-xl">←</button>
+          <h2 className="text-white font-bold text-lg">전체 신고 현황</h2>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {MOCK_REPORTS.map(r => {
+            const sc = STATUS_CONFIG[r.status];
+            const cat = CATEGORIES.find(c => c.id === r.category);
+            const zone = ZONES.find(z => z.id === r.zone);
+            const priorityColors = { low: '#6b7280', medium: '#d97706', high: '#dc2626' };
+            return (
+              <div key={r.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{cat?.icon}</span>
+                    <span className="font-mono text-xs text-gray-400">{r.id}</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <span className="text-xs px-1.5 py-0.5 rounded font-bold text-white" style={{ background: priorityColors[r.priority] }}>
+                      {r.priority === 'high' ? 'HIGH' : r.priority === 'medium' ? 'MED' : 'LOW'}
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: sc.bg, color: sc.color }}>{r.status}</span>
+                  </div>
+                </div>
+                <div className="font-semibold text-gray-800 text-sm mb-1">{r.title}</div>
+                <div className="flex gap-2 text-xs text-gray-400 flex-wrap">
+                  <span>{r.buildingName}</span>
+                  <span>·</span>
+                  <span style={{ color: zone?.color }}>{zone?.name}</span>
+                  <span>·</span>
+                  <span>by {r.reportedBy}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
+                  <span>{new Date(r.reportedAt).toLocaleString('ko-KR')}</span>
+                  <span>{r.comments.length} comments</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Zones management ──────────────────────────────────────────
+  if (screen === 'zones') {
+    return (
+      <div className="app-container flex flex-col min-h-screen bg-gray-50">
+        <div className="flex items-center gap-3 px-4 py-4" style={{ background: '#1e293b' }}>
+          <button onClick={() => setScreen('dashboard')} className="text-slate-300 text-xl">←</button>
+          <h2 className="text-white font-bold text-lg">구역 관리</h2>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {reportsByZone.map(({ zone, count, completed }) => {
+            const admin = ADMIN_USERS.find(a => a.zone === zone.id);
+            const pending = count - completed;
+            const completion = count > 0 ? Math.round((completed / count) * 100) : 0;
+            return (
+              <div key={zone.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: zone.color }}>
+                      {zone.id}
+                    </div>
+                    <div>
+                      <div className="font-bold text-gray-800 text-sm">{zone.name}</div>
+                      <div className="text-xs text-gray-500">{zone.adminName}</div>
+                    </div>
+                  </div>
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${admin?.status === '온라인' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {admin?.status || '—'}
+                  </span>
+                </div>
+                <div className="flex gap-4 text-sm mb-3">
+                  <div className="text-center">
+                    <div className="font-bold text-gray-800">{count}</div>
+                    <div className="text-xs text-gray-400">전체</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold" style={{ color: '#d97706' }}>{pending}</div>
+                    <div className="text-xs text-gray-400">미완료</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold" style={{ color: '#16a34a' }}>{completed}</div>
+                    <div className="text-xs text-gray-400">완료</div>
+                  </div>
+                  <div className="text-center ml-auto">
+                    <div className="font-bold text-gray-800">{completion}%</div>
+                    <div className="text-xs text-gray-400">처리율</div>
+                  </div>
+                </div>
+                {/* Progress bar */}
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${completion}%`, background: zone.color }} />
+                </div>
+                {admin && (
+                  <div className="mt-2 text-xs text-gray-400">마지막 접속: {admin.lastLogin}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Users ─────────────────────────────────────────────────────
+  if (screen === 'users') {
+    return (
+      <div className="app-container flex flex-col min-h-screen bg-gray-50">
+        <div className="flex items-center gap-3 px-4 py-4" style={{ background: '#1e293b' }}>
+          <button onClick={() => setScreen('dashboard')} className="text-slate-300 text-xl">←</button>
+          <h2 className="text-white font-bold text-lg">사용자 관리</h2>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-2">
+            <h4 className="text-sm font-bold text-gray-700 mb-3">관리자 계정</h4>
+            {ADMIN_USERS.map(admin => {
+              const zone = ZONES.find(z => z.id === admin.zone);
+              return (
+                <div key={admin.zone} className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold" style={{ background: zone?.color }}>
+                    {admin.zone}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-800">{admin.name}</div>
+                    <div className="text-xs text-gray-400">{admin.lastLogin} 접속</div>
+                  </div>
+                  <span className={`w-2 h-2 rounded-full ${admin.status === '온라인' ? 'bg-green-400' : 'bg-gray-300'}`} />
+                </div>
+              );
+            })}
+          </div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <h4 className="text-sm font-bold text-gray-700 mb-3">통계</h4>
+            {[
+              { label: '총 신고자 수', value: '87명', icon: '👤' },
+              { label: '오늘 신규 신고', value: '4건', icon: '📊' },
+              { label: '이번 주 신고', value: '23건', icon: '📅' },
+              { label: '평균 처리 시간', value: '4.2시간', icon: '⏱' },
+              { label: '처리 완료율', value: '72%', icon: '✅' },
+            ].map(s => (
+              <div key={s.label} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>{s.icon}</span>
+                  <span>{s.label}</span>
+                </div>
+                <span className="font-bold text-gray-800 text-sm">{s.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Dashboard ─────────────────────────────────────────────────
+  const errorCount = logs.filter(l => l.level === 'ERROR').length;
+  const warnCount = logs.filter(l => l.level === 'WARN').length;
+  const totalReports = MOCK_REPORTS.length;
+  const completedReports = MOCK_REPORTS.filter(r => r.status === '완료').length;
+  const onlineAdmins = ADMIN_USERS.filter(a => a.status === '온라인').length;
+
+  return (
+    <div className="app-container flex flex-col min-h-screen" style={{ background: '#0f172a' }}>
+      {/* Header */}
+      <div className="px-5 pt-12 pb-6" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' }}>
+        <div className="flex items-center justify-between mb-4">
+          <SuwonLogo size={32} variant="dark" showText className="opacity-90" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: '#0f9d5820', border: '1px solid #0f9d5840' }}>
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-green-400 text-xs font-mono">ONLINE</span>
+          </div>
+        </div>
+        <p className="text-slate-400 text-sm mb-0.5 font-mono">Developer Console</p>
+        <h1 className="text-white text-xl font-bold">시스템 대시보드</h1>
+        <p className="text-slate-500 text-xs font-mono mt-1">Uptime: {uptime} | v2.4.1</p>
+      </div>
+
+      {/* System stats */}
+      <div className="px-4 -mt-2">
+        <div className="rounded-2xl p-4 grid grid-cols-2 gap-3" style={{ background: '#1e293b', border: '1px solid #2d3748' }}>
+          {[
+            { label: 'Total Reports', value: totalReports, sub: '전체 신고', color: '#7c3aed' },
+            { label: 'Resolved', value: completedReports, sub: '처리 완료', color: '#10b981' },
+            { label: 'Errors (24h)', value: errorCount, sub: '에러 로그', color: errorCount > 5 ? '#ef4444' : '#f59e0b' },
+            { label: 'Admins Online', value: `${onlineAdmins}/6`, sub: '온라인 관리자', color: '#3b82f6' },
+          ].map(s => (
+            <div key={s.label} className="rounded-xl p-3" style={{ background: '#0f172a' }}>
+              <div className="text-xl font-bold font-mono" style={{ color: s.color }}>{s.value}</div>
+              <div className="text-xs text-slate-400 mt-0.5 font-mono">{s.label}</div>
+              <div className="text-xs text-slate-600">{s.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* System health */}
+      <div className="px-4 mt-4">
+        <div className="rounded-2xl p-4" style={{ background: '#1e293b', border: '1px solid #2d3748' }}>
+          <h3 className="text-slate-300 text-sm font-bold font-mono mb-3">System Health</h3>
+          {[
+            { name: 'API Gateway', status: 'healthy', latency: '28ms', uptime: '99.9%' },
+            { name: 'Auth Service', status: 'healthy', latency: '12ms', uptime: '100%' },
+            { name: 'Report Service', status: 'healthy', latency: '45ms', uptime: '99.8%' },
+            { name: 'Notification Service', status: warnCount > 3 ? 'warning' : 'healthy', latency: '89ms', uptime: '98.2%' },
+            { name: 'File Service', status: 'healthy', latency: '120ms', uptime: '99.5%' },
+          ].map(svc => (
+            <div key={svc.name} className="flex items-center gap-2 py-2 border-b border-white/5 last:border-0">
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${svc.status === 'healthy' ? 'bg-green-400' : 'bg-yellow-400'}`} />
+              <span className="text-slate-300 text-xs font-mono flex-1">{svc.name}</span>
+              <span className="text-slate-500 text-xs font-mono">{svc.latency}</span>
+              <span className="text-slate-500 text-xs font-mono">{svc.uptime}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="px-4 mt-4 grid grid-cols-2 gap-3">
+        <button
+          onClick={() => setScreen('logs')}
+          className="rounded-2xl p-4 text-left transition active:scale-95 relative"
+          style={{ background: '#1e293b', border: '1px solid #2d3748' }}
+        >
+          {(errorCount > 0) && (
+            <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
+              {errorCount}
+            </div>
+          )}
+          <div className="text-2xl mb-2">📊</div>
+          <div className="text-slate-200 font-bold text-sm">System Logs</div>
+          <div className="text-slate-500 text-xs font-mono mt-0.5">실시간 로그</div>
+        </button>
+        <button
+          onClick={() => setScreen('reports')}
+          className="rounded-2xl p-4 text-left transition active:scale-95"
+          style={{ background: '#1e293b', border: '1px solid #2d3748' }}
+        >
+          <div className="text-2xl mb-2">📋</div>
+          <div className="text-slate-200 font-bold text-sm">All Reports</div>
+          <div className="text-slate-500 text-xs font-mono mt-0.5">전체 신고 현황</div>
+        </button>
+        <button
+          onClick={() => setScreen('zones')}
+          className="rounded-2xl p-4 text-left transition active:scale-95"
+          style={{ background: '#1e293b', border: '1px solid #2d3748' }}
+        >
+          <div className="text-2xl mb-2">🗺️</div>
+          <div className="text-slate-200 font-bold text-sm">Zone Manager</div>
+          <div className="text-slate-500 text-xs font-mono mt-0.5">구역 관리</div>
+        </button>
+        <button
+          onClick={() => setScreen('users')}
+          className="rounded-2xl p-4 text-left transition active:scale-95"
+          style={{ background: '#1e293b', border: '1px solid #2d3748' }}
+        >
+          <div className="text-2xl mb-2">👥</div>
+          <div className="text-slate-200 font-bold text-sm">Users</div>
+          <div className="text-slate-500 text-xs font-mono mt-0.5">사용자 관리</div>
+        </button>
+      </div>
+
+      {/* Recent logs preview */}
+      <div className="px-4 mt-4 pb-8">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-slate-300 text-sm font-bold font-mono">Recent Logs</h3>
+          <button onClick={() => setScreen('logs')} className="text-xs text-purple-400 font-mono">View all →</button>
+        </div>
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#1e293b', border: '1px solid #2d3748' }}>
+          {logs.slice(0, 5).map((log, i) => {
+            const lc = logLevelColor[log.level];
+            return (
+              <div key={log.id} className={`px-3 py-2 flex items-center gap-2 ${i < 4 ? 'border-b border-white/5' : ''}`}>
+                <span className="text-xs font-mono font-bold px-1.5 py-0.5 rounded" style={{ background: lc.bg, color: lc.text, minWidth: 40, textAlign: 'center' }}>
+                  {log.level}
+                </span>
+                <span className="text-xs text-slate-400 font-mono flex-1 truncate">{log.message}</span>
+                <span className="text-xs text-slate-600 font-mono flex-shrink-0">
+                  {new Date(log.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
