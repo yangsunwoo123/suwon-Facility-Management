@@ -426,46 +426,51 @@ export default function UserApp() {
                 className="w-full block"
                 draggable={false}
               />
-              {/* 신고가 있는 건물만 빨간 텍스트 레이블로 표시 */}
+              {/* 모든 건물 텍스트 레이블 — 신고 있으면 빨간색, 없으면 검정색 */}
               {BUILDINGS.map(b => {
                 const active = reportsByBuilding[b.id];
-                if (!active) return null; // 신고 없는 건물은 표시 안 함
+                const hasReports = !!active;
                 return (
                   <button
                     key={b.id}
-                    onClick={() => setMapSelected({ building: b, reports: active })}
-                    className="absolute flex items-center gap-0.5 group"
+                    onClick={() => {
+                      if (hasReports) {
+                        setMapSelected({ building: b, reports: active });
+                      } else {
+                        setForm(f => ({ ...f, buildingId: b.id }));
+                        setScreen('report');
+                      }
+                    }}
+                    className="absolute active:opacity-60 transition-opacity"
                     style={{
                       left: `${b.x}%`,
                       top: `${b.y}%`,
                       transform: 'translate(-50%, -50%)',
                     }}
                   >
-                    {/* 깜빡이는 빨간 점 */}
-                    <span className="relative flex h-2 w-2 flex-shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: '#dc2626' }} />
-                      <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: '#dc2626' }} />
-                    </span>
-                    {/* 건물 이름 */}
                     <span
-                      className="font-bold leading-tight whitespace-nowrap group-active:opacity-70 transition-opacity"
+                      className="font-bold leading-tight whitespace-nowrap flex items-center gap-0.5"
                       style={{
                         fontSize: 9,
-                        color: '#dc2626',
-                        textShadow: '0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff',
-                        background: 'rgba(255,255,255,0.75)',
+                        color: hasReports ? '#dc2626' : '#1a1a1a',
+                        background: 'rgba(255,255,255,0.93)',
                         borderRadius: 3,
-                        padding: '1px 3px',
+                        padding: '1px 4px',
+                        boxShadow: hasReports
+                          ? '0 0 0 1.2px #dc262650'
+                          : '0 0 0 1px rgba(0,0,0,0.12)',
+                        display: 'flex',
                       }}
                     >
                       {b.name}
-                    </span>
-                    {/* 신고 수 배지 */}
-                    <span
-                      className="flex-shrink-0 flex items-center justify-center rounded-full text-white font-bold"
-                      style={{ width: 14, height: 14, background: '#dc2626', fontSize: 8 }}
-                    >
-                      {active.length}
+                      {hasReports && (
+                        <span
+                          className="inline-flex items-center justify-center rounded-full text-white font-bold ml-0.5"
+                          style={{ width: 12, height: 12, background: '#dc2626', fontSize: 7, flexShrink: 0 }}
+                        >
+                          {active.length}
+                        </span>
+                      )}
                     </span>
                   </button>
                 );
@@ -473,12 +478,15 @@ export default function UserApp() {
             </div>
           </div>
           {/* 안내 텍스트 */}
-          <div className="px-4 py-2.5 flex items-center gap-2 border-t border-gray-50">
-            <span className="relative flex h-2 w-2 flex-shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: '#dc2626' }} />
-              <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: '#dc2626' }} />
-            </span>
-            <span className="text-xs text-gray-400">빨간 시설명을 탭하면 신고 현황을 볼 수 있습니다</span>
+          <div className="px-4 py-2.5 flex items-center gap-3 border-t border-gray-50">
+            <div className="flex items-center gap-1">
+              <span className="inline-block w-2 h-2 rounded-sm" style={{ background: '#dc2626' }} />
+              <span className="text-xs text-gray-400">신고 있음</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="inline-block w-2 h-2 rounded-sm" style={{ background: '#1a1a1a' }} />
+              <span className="text-xs text-gray-400">신고 없음 (탭하여 신고)</span>
+            </div>
           </div>
         </div>
       </div>
