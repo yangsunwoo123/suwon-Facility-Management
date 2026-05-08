@@ -7,28 +7,25 @@ interface Props {
 }
 
 const APP_LABELS = {
-  user: { title: '시설관리 신고', badge: '학생/교직원', badgeColor: '#003670' },
-  admin: { title: '시설관리 관리자', badge: '관리자 전용', badgeColor: '#0f9d58' },
-  dev: { title: '시설관리 개발자', badge: 'Developer', badgeColor: '#7c3aed' },
+  user:  { title: '학생 · 교직원 포털', badge: '학생/교직원', color: '#1a56db', bg: '#eff6ff' },
+  admin: { title: '관리자 포털',        badge: '관리자 전용',  color: '#0f9d58', bg: '#f0fdf4' },
+  dev:   { title: '개발자 포털',        badge: 'Developer',    color: '#7c3aed', bg: '#faf5ff' },
 };
 
 const SAVE_ID_KEY = (appType: string) => `portal_saved_id_${appType}`;
 
 export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
-  const [userId, setUserId] = useState('');
+  const [userId, setUserId]     = useState('');
   const [password, setPassword] = useState('');
-  const [saveId, setSaveId] = useState(false);
+  const [saveId, setSaveId]     = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [showPw, setShowPw]     = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_ID_KEY(appType));
-    if (saved) {
-      setUserId(saved);
-      setSaveId(true);
-    }
+    if (saved) { setUserId(saved); setSaveId(true); }
   }, [appType]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPw, setShowPw] = useState(false);
 
   const label = APP_LABELS[appType];
 
@@ -39,66 +36,76 @@ export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
     }
     setLoading(true);
     setError('');
-    // Simulate network delay
     await new Promise(r => setTimeout(r, 600));
     const ok = onLogin(userId.trim(), password.trim());
     if (ok) {
       if (saveId) localStorage.setItem(SAVE_ID_KEY(appType), userId.trim());
       else localStorage.removeItem(SAVE_ID_KEY(appType));
     } else {
-      setError('아이디 또는 비밀번호가 올바르지 않습니다.\n입력하신 내용을 다시 확인해 주세요.');
+      setError('아이디 또는 비밀번호가 올바르지 않습니다.');
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#003670' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: '#f8fafc' }}>
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
+      <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <img
-            src="/logo-dark.jpg"
+            src="/logo-light.jpg"
             alt="수원대학교 로고"
-            style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
+            style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' }}
           />
           <div>
-            <div className="text-white text-sm font-bold leading-tight">수원대학교</div>
-            <div className="text-blue-300 text-xs leading-tight tracking-wide">UNIVERSITY OF SUWON</div>
+            <div className="font-extrabold text-sm leading-tight" style={{ color: '#0f172a' }}>수원대학교</div>
+            <div className="text-xs" style={{ color: '#64748b' }}>UNIVERSITY OF SUWON</div>
           </div>
         </div>
         <span
-          className="text-xs font-bold px-2.5 py-1 rounded-full text-white"
-          style={{ background: label.badgeColor, opacity: 0.9 }}
+          className="text-xs font-bold px-2.5 py-1 rounded-full"
+          style={{ background: label.bg, color: label.color }}
         >
           {label.badge}
         </span>
       </div>
 
-      {/* Hero section */}
-      <div className="px-6 pt-8 pb-6 flex flex-col items-center text-center">
+      {/* Hero */}
+      <div
+        className="px-5 pt-10 pb-8 flex flex-col items-center text-center"
+        style={{ background: 'linear-gradient(160deg, #1a56db 0%, #003670 100%)' }}
+      >
         <img
           src="/logo-dark.jpg"
           alt="수원대학교 로고"
           onClick={onLogoTap}
-          style={{ width: 88, height: 88, borderRadius: '50%', objectFit: 'cover', marginBottom: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.3)', cursor: onLogoTap ? 'pointer' : 'default' }}
+          style={{
+            width: 80, height: 80,
+            borderRadius: '50%',
+            objectFit: 'cover',
+            marginBottom: 16,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+            cursor: onLogoTap ? 'pointer' : 'default',
+            border: '3px solid rgba(255,255,255,0.25)',
+          }}
         />
-        <h1 className="text-white text-lg font-bold mb-0.5">통합 포털 로그인</h1>
-        <p className="text-blue-300 text-sm">{label.title}</p>
+        <h1 className="text-white text-lg font-extrabold mb-1">통합 포털 로그인</h1>
+        <p className="text-blue-200 text-sm">{label.title}</p>
       </div>
 
       {/* Login card */}
-      <div className="flex-1 mx-4 mb-6">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div className="flex-1 px-4 py-5">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden max-w-md mx-auto">
           {/* Card header */}
           <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-            <div className="w-1 h-5 rounded-full" style={{ background: '#E9B800' }} />
+            <div className="w-1 h-5 rounded-full" style={{ background: label.color }} />
             <span className="text-sm font-bold text-gray-700">포털 계정으로 로그인</span>
           </div>
 
           <div className="px-5 py-5 space-y-4">
             {/* 학번/아이디 */}
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1.5 block tracking-wide uppercase">학번 / 아이디</label>
+              <label className="text-xs font-bold text-gray-500 mb-1.5 block tracking-wide uppercase">학번 / 아이디</label>
               <div className="relative">
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -108,7 +115,10 @@ export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
                 <input
                   type="text"
                   className="w-full pl-9 pr-4 py-3 rounded-xl border text-sm focus:outline-none transition"
-                  style={{ borderColor: userId ? '#003670' : '#e5e7eb', background: '#fafafa' }}
+                  style={{
+                    borderColor: userId ? label.color : '#e5e7eb',
+                    background: '#fafafa',
+                  }}
                   placeholder="학번 또는 아이디 입력"
                   value={userId}
                   onChange={e => { setUserId(e.target.value); setError(''); }}
@@ -120,7 +130,7 @@ export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
 
             {/* 비밀번호 */}
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1.5 block tracking-wide uppercase">비밀번호</label>
+              <label className="text-xs font-bold text-gray-500 mb-1.5 block tracking-wide uppercase">비밀번호</label>
               <div className="relative">
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -130,7 +140,10 @@ export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
                 <input
                   type={showPw ? 'text' : 'password'}
                   className="w-full pl-9 pr-10 py-3 rounded-xl border text-sm focus:outline-none transition"
-                  style={{ borderColor: password ? '#003670' : '#e5e7eb', background: '#fafafa' }}
+                  style={{
+                    borderColor: password ? label.color : '#e5e7eb',
+                    background: '#fafafa',
+                  }}
                   placeholder="비밀번호 입력"
                   value={password}
                   onChange={e => { setPassword(e.target.value); setError(''); }}
@@ -160,29 +173,29 @@ export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <div
                 onClick={() => setSaveId(v => !v)}
-                className="w-4.5 h-4.5 rounded border-2 flex items-center justify-center transition-all flex-shrink-0"
+                className="rounded border-2 flex items-center justify-center transition-all flex-shrink-0"
                 style={{
                   width: 18, height: 18,
-                  borderColor: saveId ? '#003670' : '#d1d5db',
-                  background: saveId ? '#003670' : '#fff',
+                  borderColor: saveId ? label.color : '#d1d5db',
+                  background: saveId ? label.color : '#fff',
                 }}
               >
                 {saveId && (
                   <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                    <path d="M1 4L3.5 6.5L9 1" stroke="#E9B800" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </div>
               <span className="text-sm text-gray-600">아이디 저장</span>
             </label>
 
-            {/* Error message */}
+            {/* Error */}
             {error && (
               <div className="flex items-start gap-2 px-3.5 py-3 rounded-xl bg-red-50 border border-red-100">
                 <svg className="flex-shrink-0 mt-0.5" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#ef4444" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-xs text-red-600 leading-relaxed whitespace-pre-line">{error}</p>
+                <p className="text-xs text-red-600 leading-relaxed">{error}</p>
               </div>
             )}
 
@@ -190,8 +203,8 @@ export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
             <button
               onClick={handleLogin}
               disabled={loading}
-              className="w-full py-3.5 rounded-xl font-bold text-sm transition active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
-              style={{ background: '#003670', color: '#fff' }}
+              className="w-full py-3.5 rounded-xl font-bold text-sm transition active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2 text-white"
+              style={{ background: label.color }}
             >
               {loading ? (
                 <>
@@ -216,12 +229,10 @@ export default function PortalLogin({ appType, onLogin, onLogoTap }: Props) {
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* Bottom safe area */}
       <div className="pb-6 text-center">
-        <p className="text-blue-400/60 text-xs">© 2026 University of Suwon</p>
+        <p className="text-xs text-gray-400">© 2026 University of Suwon</p>
       </div>
     </div>
   );

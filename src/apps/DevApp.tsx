@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import SuwonLogo from '../components/SuwonLogo';
 import PortalLogin from '../components/PortalLogin';
 import { MOCK_LOGS } from '../data/mockData';
 import { MOCK_REPORTS } from '../data/mockData';
@@ -8,24 +7,55 @@ import type { LogEntry } from '../data/types';
 
 type Screen = 'login' | 'dashboard' | 'logs' | 'reports' | 'users' | 'zones';
 
+const PRIMARY = '#7c3aed';
+
 const ADMIN_USERS = [
-  { zone: 'A', name: '공학관 관리팀',    status: '온라인',   lastLogin: '10분 전' },
-  { zone: 'B', name: '혁신·연구 관리팀', status: '오프라인', lastLogin: '2시간 전' },
-  { zone: 'C', name: '학생복지 관리팀',  status: '온라인',   lastLogin: '5분 전' },
-  { zone: 'D', name: '예술·문화 관리팀', status: '온라인',   lastLogin: '30분 전' },
+  { zone: 'A', name: '공학관 관리팀',      status: '온라인',   lastLogin: '10분 전' },
+  { zone: 'B', name: '혁신·연구 관리팀',   status: '오프라인', lastLogin: '2시간 전' },
+  { zone: 'C', name: '학생복지 관리팀',    status: '온라인',   lastLogin: '5분 전' },
+  { zone: 'D', name: '예술·문화 관리팀',   status: '온라인',   lastLogin: '30분 전' },
   { zone: 'E', name: '인문·글로벌 관리팀', status: '오프라인', lastLogin: '1일 전' },
-  { zone: 'F', name: '본부 관리팀',      status: '온라인',   lastLogin: '방금' },
+  { zone: 'F', name: '본부 관리팀',        status: '온라인',   lastLogin: '방금' },
 ];
 
+const logLevelColor: Record<string, { text: string; bg: string }> = {
+  INFO:  { text: '#2563eb', bg: '#eff6ff' },
+  WARN:  { text: '#d97706', bg: '#fffbeb' },
+  ERROR: { text: '#dc2626', bg: '#fef2f2' },
+  DEBUG: { text: '#6b7280', bg: '#f3f4f6' },
+};
+
+function BackBtn({ onBack, label, dark = false }: { onBack: () => void; label: string; dark?: boolean }) {
+  return (
+    <div
+      className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3.5 border-b"
+      style={dark
+        ? { background: '#1e293b', borderColor: '#2d3748' }
+        : { background: '#fff', borderColor: '#f1f5f9' }
+      }
+    >
+      <button
+        onClick={onBack}
+        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={dark ? { background: '#0f172a' } : { background: '#f1f5f9' }}
+      >
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke={dark ? '#94a3b8' : '#374151'} strokeWidth="2.5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <span className={`font-bold text-base ${dark ? 'text-white' : 'text-gray-800'}`}>{label}</span>
+    </div>
+  );
+}
+
 export default function DevApp() {
-  const [screen, setScreen] = useState<Screen>('login');
-  const [logs, setLogs] = useState<LogEntry[]>(MOCK_LOGS);
+  const [screen, setScreen]     = useState<Screen>('login');
+  const [logs, setLogs]         = useState<LogEntry[]>(MOCK_LOGS);
   const [logFilter, setLogFilter] = useState<'ALL' | 'INFO' | 'WARN' | 'ERROR' | 'DEBUG'>('ALL');
   const [liveMode, setLiveMode] = useState(false);
-  const [uptime] = useState('7d 14h 23m');
-  const logsEndRef = useRef<HTMLDivElement>(null);
+  const [uptime]                = useState('7d 14h 23m');
+  const logsEndRef              = useRef<HTMLDivElement>(null);
 
-  // Simulate live log streaming
   useEffect(() => {
     if (!liveMode) return;
     const services = ['auth-service', 'report-service', 'notification-service', 'api-gateway'];
@@ -66,21 +96,13 @@ export default function DevApp() {
   };
 
   const filteredLogs = logFilter === 'ALL' ? logs : logs.filter(l => l.level === logFilter);
-
-  const logLevelColor = {
-    INFO: { text: '#2563eb', bg: '#eff6ff' },
-    WARN: { text: '#d97706', bg: '#fffbeb' },
-    ERROR: { text: '#dc2626', bg: '#fef2f2' },
-    DEBUG: { text: '#6b7280', bg: '#f3f4f6' },
-  };
-
   const reportsByZone = ZONES.map(z => ({
     zone: z,
     count: MOCK_REPORTS.filter(r => r.zone === z.id).length,
     completed: MOCK_REPORTS.filter(r => r.zone === z.id && r.status === '완료').length,
   }));
 
-  // ── Login ─────────────────────────────────────────────────────
+  // ── Login ───────────────────────────────────────────────────────
   if (screen === 'login') {
     return (
       <div className="app-container">
@@ -89,17 +111,26 @@ export default function DevApp() {
     );
   }
 
-  // ── Logs ──────────────────────────────────────────────────────
+  // ── Logs ────────────────────────────────────────────────────────
   if (screen === 'logs') {
     return (
       <div className="app-container flex flex-col min-h-screen" style={{ background: '#0f172a' }}>
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
-          <button onClick={() => setScreen('dashboard')} className="text-slate-400 text-xl">←</button>
-          <h2 className="text-white font-bold text-lg font-mono">System Logs</h2>
-          <div className="ml-auto flex items-center gap-2">
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3.5 border-b" style={{ background: '#1e293b', borderColor: '#2d3748' }}>
+          <button
+            onClick={() => setScreen('dashboard')}
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: '#0f172a' }}
+          >
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <span className="font-bold text-base text-white font-mono">System Logs</span>
+          <div className="ml-auto">
             <button
               onClick={() => setLiveMode(l => !l)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition font-mono"
               style={liveMode
                 ? { background: '#16a34a20', color: '#4ade80', border: '1px solid #16a34a' }
                 : { background: '#ffffff10', color: '#9ca3af', border: '1px solid #374151' }
@@ -112,14 +143,14 @@ export default function DevApp() {
         </div>
 
         {/* Level filter */}
-        <div className="px-4 py-2 flex gap-2 overflow-x-auto border-b border-white/5">
+        <div className="px-4 py-2 flex gap-2 overflow-x-auto border-b" style={{ borderColor: '#ffffff0d' }}>
           {(['ALL', 'INFO', 'WARN', 'ERROR', 'DEBUG'] as const).map(lvl => (
             <button
               key={lvl}
               onClick={() => setLogFilter(lvl)}
               className="px-3 py-1 rounded text-xs font-mono font-bold whitespace-nowrap"
               style={logFilter === lvl
-                ? { background: lvl === 'ALL' ? '#7c3aed' : logLevelColor[lvl]?.bg, color: lvl === 'ALL' ? '#fff' : logLevelColor[lvl]?.text }
+                ? { background: lvl === 'ALL' ? PRIMARY : logLevelColor[lvl]?.bg, color: lvl === 'ALL' ? '#fff' : logLevelColor[lvl]?.text }
                 : { background: '#1e293b', color: '#64748b' }
               }
             >
@@ -128,11 +159,12 @@ export default function DevApp() {
           ))}
         </div>
 
+        {/* Log entries */}
         <div className="flex-1 overflow-y-auto p-3 space-y-1">
           {filteredLogs.map(log => {
             const lc = logLevelColor[log.level];
             return (
-              <div key={log.id} className="rounded-lg p-2.5 border" style={{ background: '#1e293b', borderColor: '#2d3748' }}>
+              <div key={log.id} className="rounded-xl p-2.5 border" style={{ background: '#1e293b', borderColor: '#2d3748' }}>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-bold font-mono px-1.5 py-0.5 rounded" style={{ background: lc.bg, color: lc.text }}>
                     {log.level}
@@ -143,7 +175,7 @@ export default function DevApp() {
                   </span>
                 </div>
                 <p className="text-sm text-slate-300 font-mono leading-relaxed">{log.message}</p>
-                {log.userId && <span className="text-xs text-purple-400 font-mono">uid:{log.userId}</span>}
+                {log.userId && <span className="text-xs font-mono" style={{ color: '#a78bfa' }}>uid:{log.userId}</span>}
               </div>
             );
           })}
@@ -153,14 +185,11 @@ export default function DevApp() {
     );
   }
 
-  // ── Reports overview ──────────────────────────────────────────
+  // ── Reports overview ─────────────────────────────────────────────
   if (screen === 'reports') {
     return (
-      <div className="app-container flex flex-col min-h-screen bg-gray-50">
-        <div className="flex items-center gap-3 px-4 py-4" style={{ background: '#1e293b' }}>
-          <button onClick={() => setScreen('dashboard')} className="text-slate-300 text-xl">←</button>
-          <h2 className="text-white font-bold text-lg">전체 신고 현황</h2>
-        </div>
+      <div className="app-container flex flex-col min-h-screen" style={{ background: '#f8fafc' }}>
+        <BackBtn onBack={() => setScreen('dashboard')} label="전체 신고 현황" />
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {MOCK_REPORTS.map(r => {
             const sc = STATUS_CONFIG[r.status];
@@ -200,14 +229,11 @@ export default function DevApp() {
     );
   }
 
-  // ── Zones management ──────────────────────────────────────────
+  // ── Zones management ─────────────────────────────────────────────
   if (screen === 'zones') {
     return (
-      <div className="app-container flex flex-col min-h-screen bg-gray-50">
-        <div className="flex items-center gap-3 px-4 py-4" style={{ background: '#1e293b' }}>
-          <button onClick={() => setScreen('dashboard')} className="text-slate-300 text-xl">←</button>
-          <h2 className="text-white font-bold text-lg">구역 관리</h2>
-        </div>
+      <div className="app-container flex flex-col min-h-screen" style={{ background: '#f8fafc' }}>
+        <BackBtn onBack={() => setScreen('dashboard')} label="구역 관리" />
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {reportsByZone.map(({ zone, count, completed }) => {
             const admin = ADMIN_USERS.find(a => a.zone === zone.id);
@@ -216,7 +242,7 @@ export default function DevApp() {
             return (
               <div key={zone.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: zone.color }}>
                       {zone.id}
                     </div>
@@ -247,7 +273,6 @@ export default function DevApp() {
                     <div className="text-xs text-gray-400">처리율</div>
                   </div>
                 </div>
-                {/* Progress bar */}
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all" style={{ width: `${completion}%`, background: zone.color }} />
                 </div>
@@ -262,41 +287,41 @@ export default function DevApp() {
     );
   }
 
-  // ── Users ─────────────────────────────────────────────────────
+  // ── Users ───────────────────────────────────────────────────────
   if (screen === 'users') {
     return (
-      <div className="app-container flex flex-col min-h-screen bg-gray-50">
-        <div className="flex items-center gap-3 px-4 py-4" style={{ background: '#1e293b' }}>
-          <button onClick={() => setScreen('dashboard')} className="text-slate-300 text-xl">←</button>
-          <h2 className="text-white font-bold text-lg">사용자 관리</h2>
-        </div>
+      <div className="app-container flex flex-col min-h-screen" style={{ background: '#f8fafc' }}>
+        <BackBtn onBack={() => setScreen('dashboard')} label="사용자 관리" />
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-2">
+          {/* Admin accounts */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <h4 className="text-sm font-bold text-gray-700 mb-3">관리자 계정</h4>
             {ADMIN_USERS.map(admin => {
               const zone = ZONES.find(z => z.id === admin.zone);
               return (
                 <div key={admin.zone} className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold" style={{ background: zone?.color }}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0" style={{ background: zone?.color }}>
                     {admin.zone}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-800">{admin.name}</div>
                     <div className="text-xs text-gray-400">{admin.lastLogin} 접속</div>
                   </div>
-                  <span className={`w-2 h-2 rounded-full ${admin.status === '온라인' ? 'bg-green-400' : 'bg-gray-300'}`} />
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${admin.status === '온라인' ? 'bg-green-400' : 'bg-gray-300'}`} />
                 </div>
               );
             })}
           </div>
+
+          {/* Stats */}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <h4 className="text-sm font-bold text-gray-700 mb-3">통계</h4>
+            <h4 className="text-sm font-bold text-gray-700 mb-3">시스템 통계</h4>
             {[
-              { label: '총 신고자 수', value: '87명', icon: '👤' },
-              { label: '오늘 신규 신고', value: '4건', icon: '📊' },
-              { label: '이번 주 신고', value: '23건', icon: '📅' },
-              { label: '평균 처리 시간', value: '4.2시간', icon: '⏱' },
-              { label: '처리 완료율', value: '72%', icon: '✅' },
+              { label: '총 신고자 수',    value: '87명',   icon: '👤' },
+              { label: '오늘 신규 신고',  value: '4건',    icon: '📊' },
+              { label: '이번 주 신고',    value: '23건',   icon: '📅' },
+              { label: '평균 처리 시간',  value: '4.2시간', icon: '⏱' },
+              { label: '처리 완료율',     value: '72%',    icon: '✅' },
             ].map(s => (
               <div key={s.label} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -312,36 +337,45 @@ export default function DevApp() {
     );
   }
 
-  // ── Dashboard ─────────────────────────────────────────────────
+  // ── Dashboard ───────────────────────────────────────────────────
   const errorCount = logs.filter(l => l.level === 'ERROR').length;
-  const warnCount = logs.filter(l => l.level === 'WARN').length;
-  const totalReports = MOCK_REPORTS.length;
+  const warnCount  = logs.filter(l => l.level === 'WARN').length;
+  const totalReports     = MOCK_REPORTS.length;
   const completedReports = MOCK_REPORTS.filter(r => r.status === '완료').length;
-  const onlineAdmins = ADMIN_USERS.filter(a => a.status === '온라인').length;
+  const onlineAdmins     = ADMIN_USERS.filter(a => a.status === '온라인').length;
 
   return (
     <div className="app-container flex flex-col min-h-screen" style={{ background: '#0f172a' }}>
       {/* Header */}
-      <div className="px-5 pt-12 pb-6" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' }}>
+      <div className="px-5 pt-12 pb-5" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' }}>
         <div className="flex items-center justify-between mb-4">
-          <SuwonLogo size={32} variant="dark" showText className="opacity-90" />
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: '#0f9d5820', border: '1px solid #0f9d5840' }}>
+          <div className="flex items-center gap-2.5">
+            <img
+              src="/logo-dark.jpg"
+              alt="수원대학교"
+              style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
+            />
+            <div>
+              <div className="text-white font-extrabold text-sm leading-tight">수원대학교</div>
+              <div className="text-xs font-mono" style={{ color: '#64748b' }}>Developer Console</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: '#16a34a18', border: '1px solid #16a34a40' }}>
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-green-400 text-xs font-mono">ONLINE</span>
+            <span className="text-green-400 text-xs font-mono font-bold">ONLINE</span>
           </div>
         </div>
-        <p className="text-slate-400 text-sm mb-0.5 font-mono">Developer Console</p>
-        <h1 className="text-white text-xl font-bold">시스템 대시보드</h1>
-        <p className="text-slate-500 text-xs font-mono mt-1">Uptime: {uptime} | v2.4.1</p>
+        <h1 className="text-white text-xl font-extrabold">시스템 대시보드</h1>
+        <p className="text-slate-500 text-xs font-mono mt-1">Uptime: {uptime} · v2.4.1</p>
       </div>
 
       {/* System stats */}
-      <div className="px-4 -mt-2">
+      <div className="px-4 mt-4">
         <div className="rounded-2xl p-4 grid grid-cols-2 gap-3" style={{ background: '#1e293b', border: '1px solid #2d3748' }}>
           {[
-            { label: 'Total Reports', value: totalReports, sub: '전체 신고', color: '#7c3aed' },
-            { label: 'Resolved', value: completedReports, sub: '처리 완료', color: '#10b981' },
-            { label: 'Errors (24h)', value: errorCount, sub: '에러 로그', color: errorCount > 5 ? '#ef4444' : '#f59e0b' },
+            { label: 'Total Reports', value: String(totalReports), sub: '전체 신고',    color: PRIMARY },
+            { label: 'Resolved',      value: String(completedReports), sub: '처리 완료', color: '#10b981' },
+            { label: 'Errors (24h)',  value: String(errorCount), sub: '에러 로그',      color: errorCount > 5 ? '#ef4444' : '#f59e0b' },
             { label: 'Admins Online', value: `${onlineAdmins}/6`, sub: '온라인 관리자', color: '#3b82f6' },
           ].map(s => (
             <div key={s.label} className="rounded-xl p-3" style={{ background: '#0f172a' }}>
@@ -356,15 +390,18 @@ export default function DevApp() {
       {/* System health */}
       <div className="px-4 mt-4">
         <div className="rounded-2xl p-4" style={{ background: '#1e293b', border: '1px solid #2d3748' }}>
-          <h3 className="text-slate-300 text-sm font-bold font-mono mb-3">System Health</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-slate-300 text-sm font-bold font-mono">System Health</h3>
+            <span className="text-xs text-slate-500 font-mono">5 services</span>
+          </div>
           {[
-            { name: 'API Gateway', status: 'healthy', latency: '28ms', uptime: '99.9%' },
-            { name: 'Auth Service', status: 'healthy', latency: '12ms', uptime: '100%' },
-            { name: 'Report Service', status: 'healthy', latency: '45ms', uptime: '99.8%' },
-            { name: 'Notification Service', status: warnCount > 3 ? 'warning' : 'healthy', latency: '89ms', uptime: '98.2%' },
-            { name: 'File Service', status: 'healthy', latency: '120ms', uptime: '99.5%' },
+            { name: 'API Gateway',            status: 'healthy', latency: '28ms',  uptime: '99.9%' },
+            { name: 'Auth Service',           status: 'healthy', latency: '12ms',  uptime: '100%' },
+            { name: 'Report Service',         status: 'healthy', latency: '45ms',  uptime: '99.8%' },
+            { name: 'Notification Service',   status: warnCount > 3 ? 'warning' : 'healthy', latency: '89ms', uptime: '98.2%' },
+            { name: 'File Service',           status: 'healthy', latency: '120ms', uptime: '99.5%' },
           ].map(svc => (
-            <div key={svc.name} className="flex items-center gap-2 py-2 border-b border-white/5 last:border-0">
+            <div key={svc.name} className="flex items-center gap-2 py-2 border-b last:border-0" style={{ borderColor: '#ffffff0d' }}>
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${svc.status === 'healthy' ? 'bg-green-400' : 'bg-yellow-400'}`} />
               <span className="text-slate-300 text-xs font-mono flex-1">{svc.name}</span>
               <span className="text-slate-500 text-xs font-mono">{svc.latency}</span>
@@ -376,61 +413,51 @@ export default function DevApp() {
 
       {/* Quick actions */}
       <div className="px-4 mt-4 grid grid-cols-2 gap-3">
-        <button
-          onClick={() => setScreen('logs')}
-          className="rounded-2xl p-4 text-left transition active:scale-95 relative"
-          style={{ background: '#1e293b', border: '1px solid #2d3748' }}
-        >
-          {(errorCount > 0) && (
-            <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
-              {errorCount}
-            </div>
-          )}
-          <div className="text-2xl mb-2">📊</div>
-          <div className="text-slate-200 font-bold text-sm">System Logs</div>
-          <div className="text-slate-500 text-xs font-mono mt-0.5">실시간 로그</div>
-        </button>
-        <button
-          onClick={() => setScreen('reports')}
-          className="rounded-2xl p-4 text-left transition active:scale-95"
-          style={{ background: '#1e293b', border: '1px solid #2d3748' }}
-        >
-          <div className="text-2xl mb-2">📋</div>
-          <div className="text-slate-200 font-bold text-sm">All Reports</div>
-          <div className="text-slate-500 text-xs font-mono mt-0.5">전체 신고 현황</div>
-        </button>
-        <button
-          onClick={() => setScreen('zones')}
-          className="rounded-2xl p-4 text-left transition active:scale-95"
-          style={{ background: '#1e293b', border: '1px solid #2d3748' }}
-        >
-          <div className="text-2xl mb-2">🗺️</div>
-          <div className="text-slate-200 font-bold text-sm">Zone Manager</div>
-          <div className="text-slate-500 text-xs font-mono mt-0.5">구역 관리</div>
-        </button>
-        <button
-          onClick={() => setScreen('users')}
-          className="rounded-2xl p-4 text-left transition active:scale-95"
-          style={{ background: '#1e293b', border: '1px solid #2d3748' }}
-        >
-          <div className="text-2xl mb-2">👥</div>
-          <div className="text-slate-200 font-bold text-sm">Users</div>
-          <div className="text-slate-500 text-xs font-mono mt-0.5">사용자 관리</div>
-        </button>
+        {[
+          { screen: 'logs'    as Screen, icon: '📊', title: 'System Logs',  sub: '실시간 로그',   badge: errorCount > 0 ? String(errorCount) : null },
+          { screen: 'reports' as Screen, icon: '📋', title: 'All Reports',  sub: '전체 신고 현황', badge: null },
+          { screen: 'zones'   as Screen, icon: '🗺️', title: 'Zone Manager', sub: '구역 관리',     badge: null },
+          { screen: 'users'   as Screen, icon: '👥', title: 'Users',        sub: '사용자 관리',   badge: null },
+        ].map(item => (
+          <button
+            key={item.screen}
+            onClick={() => setScreen(item.screen)}
+            className="rounded-2xl p-4 text-left transition active:scale-95 relative"
+            style={{ background: '#1e293b', border: '1px solid #2d3748' }}
+          >
+            {item.badge && (
+              <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold font-mono">
+                {item.badge}
+              </div>
+            )}
+            <div className="text-2xl mb-2">{item.icon}</div>
+            <div className="text-slate-200 font-bold text-sm">{item.title}</div>
+            <div className="text-slate-500 text-xs font-mono mt-0.5">{item.sub}</div>
+          </button>
+        ))}
       </div>
 
       {/* Recent logs preview */}
       <div className="px-4 mt-4 pb-8">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-slate-300 text-sm font-bold font-mono">Recent Logs</h3>
-          <button onClick={() => setScreen('logs')} className="text-xs text-purple-400 font-mono">View all →</button>
+          <button onClick={() => setScreen('logs')} className="text-xs font-mono" style={{ color: '#a78bfa' }}>
+            View all →
+          </button>
         </div>
         <div className="rounded-2xl overflow-hidden" style={{ background: '#1e293b', border: '1px solid #2d3748' }}>
           {logs.slice(0, 5).map((log, i) => {
             const lc = logLevelColor[log.level];
             return (
-              <div key={log.id} className={`px-3 py-2 flex items-center gap-2 ${i < 4 ? 'border-b border-white/5' : ''}`}>
-                <span className="text-xs font-mono font-bold px-1.5 py-0.5 rounded" style={{ background: lc.bg, color: lc.text, minWidth: 40, textAlign: 'center' }}>
+              <div
+                key={log.id}
+                className="px-3 py-2 flex items-center gap-2"
+                style={i < 4 ? { borderBottom: '1px solid #ffffff0d' } : {}}
+              >
+                <span
+                  className="text-xs font-mono font-bold px-1.5 py-0.5 rounded flex-shrink-0"
+                  style={{ background: lc.bg, color: lc.text, minWidth: 40, textAlign: 'center' }}
+                >
                   {log.level}
                 </span>
                 <span className="text-xs text-slate-400 font-mono flex-1 truncate">{log.message}</span>
