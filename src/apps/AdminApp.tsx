@@ -29,19 +29,21 @@ export default function AdminApp() {
   const [notification, setNotification] = useState<{ visible: boolean; report: IssueReport | null }>({ visible: false, report: null });
   const [filterStatus, setFilterStatus] = useState<IssueStatus | 'all'>('all');
 
-  // 개발자 모드 진입: 로고 5회 연속 탭
+  // 개발자 모드 진입 / 이스터에그
   const [devTapCount, setDevTapCount] = useState(0);
+  const [easterEgg, setEasterEgg] = useState(false);
   const devTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleDevTap = () => {
     const next = devTapCount + 1;
-    setDevTapCount(next);
     if (devTapTimer.current) clearTimeout(devTapTimer.current);
     if (next >= 5) {
+      // 5번 탭 → 이스터에그
       setDevTapCount(0);
-      navigate('/dev');
+      setEasterEgg(true);
       return;
     }
+    setDevTapCount(next);
     devTapTimer.current = setTimeout(() => setDevTapCount(0), 2500);
   };
 
@@ -73,6 +75,12 @@ export default function AdminApp() {
   }, [screen, selectedZone]);
 
   const handleAdminLogin = (id: string, pw: string): boolean => {
+    // 로고 3번 탭 후 로그인 버튼 → 개발자 앱으로 이동
+    if (devTapCount === 3) {
+      setDevTapCount(0);
+      navigate('/dev');
+      return true;
+    }
     const account = ADMIN_ACCOUNTS.find(a => a.id === id.toLowerCase());
     if (!account || (pw !== '1234' && pw !== 'admin')) return false;
     setSelectedZone(account.zone);
@@ -114,16 +122,22 @@ export default function AdminApp() {
     '보류': reports.filter(r => r.status === '보류').length,
   };
 
+  // ── 이스터에그 ───────────────────────────────────────────────
+  if (easterEgg) {
+    return (
+      <div
+        className="app-container flex items-center justify-center min-h-screen bg-white"
+        onClick={() => setEasterEgg(false)}
+      >
+        <p className="text-2xl font-bold text-black select-none">힝~ 속았징?</p>
+      </div>
+    );
+  }
+
   // ── Login ────────────────────────────────────────────────────
   if (screen === 'login') {
     return (
-      <div className="app-container relative">
-        {devTapCount >= 2 && (
-          <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 px-4 py-2 rounded-full text-xs font-bold text-white shadow-lg"
-            style={{ background: 'rgba(0,0,0,0.7)' }}>
-            개발자 모드 진입 중 ({devTapCount}/5)
-          </div>
-        )}
+      <div className="app-container">
         <PortalLogin appType="admin" onLogin={handleAdminLogin} onLogoTap={handleDevTap} />
       </div>
     );
