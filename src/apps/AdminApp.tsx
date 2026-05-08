@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import SuwonLogo from '../components/SuwonLogo';
 import PortalLogin from '../components/PortalLogin';
 import { CATEGORIES, STATUS_CONFIG } from '../data/campus';
-import { MOCK_REPORTS } from '../data/mockData';
+import { loadReports, updateReport as storeUpdateReport } from '../data/store';
 import type { IssueReport, IssueStatus, ZoneId } from '../data/types';
 
 type Screen = 'login' | 'dashboard' | 'list' | 'detail';
@@ -27,31 +27,21 @@ export default function AdminApp() {
   const [notification, setNotification] = useState<{ visible: boolean; report: IssueReport | null }>({ visible: false, report: null });
   const [filterStatus, setFilterStatus] = useState<IssueStatus | 'all'>('all');
 
-  // Simulate new notification arriving
+  // 다른 탭(사용자 앱)에서 새 신고 접수 시 실시간 반영
   useEffect(() => {
-    if (screen !== 'dashboard' && screen !== 'list') return;
-    const timer = setTimeout(() => {
-      const newReport: IssueReport = {
-        id: 'RPT-NEW',
-        title: '미래혁신관 3층 에어컨 고장',
-        category: '시설파손',
-        description: '강의실 내 에어컨이 작동하지 않습니다.',
-        buildingId: 'future',
-        buildingName: '미래혁신관',
-        zone: 'B',
-        status: '접수됨',
-        reportedBy: '홍길동',
-        reportedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        location: '3층 302호',
-        priority: 'high',
-        comments: [],
-      };
-      if (newReport.zone === selectedZone) {
-        setNotification({ visible: true, report: newReport });
-      }
-    }, 5000);
-    return () => clearTimeout(timer);
+    if (screen === 'login') return;
+    const handler = () => {
+      const fresh = loadReports().filter(r => r.zone === selectedZone);
+      setReports(prev => {
+        const newOnes = fresh.filter(nr => !prev.find(p => p.id === nr.id));
+        if (newOnes.length > 0) {
+          setNotification({ visible: true, report: newOnes[0] });
+        }
+        return fresh;
+      });
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
   }, [screen, selectedZone]);
 
   const handleAdminLogin = (id: string, pw: string): boolean => {
@@ -59,15 +49,17 @@ export default function AdminApp() {
     if (!account || (pw !== '1234' && pw !== 'admin')) return false;
     setSelectedZone(account.zone);
     setAdminName(account.name);
-    setReports(MOCK_REPORTS.filter(r => r.zone === account.zone));
+    setReports(loadReports().filter(r => r.zone === account.zone));
     setScreen('dashboard');
     return true;
   };
 
   const updateStatus = (reportId: string, status: IssueStatus) => {
-    setReports(prev => prev.map(r => r.id === reportId ? { ...r, status, updatedAt: new Date().toISOString() } : r));
+    const updated = { status, updatedAt: new Date().toISOString() };
+    storeUpdateReport(reportId, updated);                 // localStorage 저장
+    setReports(prev => prev.map(r => r.id === reportId ? { ...r, ...updated } : r));
     if (selectedReport?.id === reportId) {
-      setSelectedReport(prev => prev ? { ...prev, status } : null);
+      setSelectedReport(prev => prev ? { ...prev, ...updated } : null);
     }
   };
 
@@ -80,6 +72,11 @@ export default function AdminApp() {
       text: replyText,
       createdAt: new Date().toISOString(),
     };
+    const target = reports.find(r => r.id === reportId);
+    if (target) {
+      const newComments = [...target.comments, comment];
+      storeUpdateReport(reportId, { comments: newComments, updatedAt: new Date().toISOString() }); // localStorage 저장
+    }
     setReports(prev => prev.map(r => r.id === reportId ? { ...r, comments: [...r.comments, comment] } : r));
     if (selectedReport?.id === reportId) {
       setSelectedReport(prev => prev ? { ...prev, comments: [...prev.comments, comment] } : null);

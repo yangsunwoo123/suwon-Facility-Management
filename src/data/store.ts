@@ -1,0 +1,35 @@
+import { MOCK_REPORTS } from './mockData';
+import type { IssueReport } from './types';
+
+const KEY = 'suwon_reports';
+
+export function initStore(): void {
+  if (!localStorage.getItem(KEY)) {
+    localStorage.setItem(KEY, JSON.stringify(MOCK_REPORTS));
+  }
+}
+
+export function loadReports(): IssueReport[] {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : MOCK_REPORTS;
+  } catch {
+    return MOCK_REPORTS;
+  }
+}
+
+export function saveReports(reports: IssueReport[]): void {
+  localStorage.setItem(KEY, JSON.stringify(reports));
+}
+
+export function addReport(report: IssueReport): void {
+  // blob URL은 다른 탭에서 접근 불가 — 저장 시 제거
+  const toSave = report.imageUrl?.startsWith('blob:')
+    ? { ...report, imageUrl: '' }
+    : report;
+  saveReports([toSave, ...loadReports()]);
+}
+
+export function updateReport(id: string, updates: Partial<IssueReport>): void {
+  saveReports(loadReports().map(r => r.id === id ? { ...r, ...updates } : r));
+}

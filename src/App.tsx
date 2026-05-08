@@ -1,8 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { initStore } from './data/store';
 import LandingPage from './apps/LandingPage';
 import UserApp from './apps/UserApp';
 import AdminApp from './apps/AdminApp';
 import DevApp from './apps/DevApp';
+
+initStore();
 
 export default function App() {
   return (

@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SuwonLogo from '../components/SuwonLogo';
 import PortalLogin from '../components/PortalLogin';
 import { BUILDINGS, CATEGORIES, STATUS_CONFIG, ZONES } from '../data/campus';
-import { MOCK_REPORTS } from '../data/mockData';
+import { loadReports, addReport as storeAddReport } from '../data/store';
 import type { IssueCategory, IssueReport } from '../data/types';
 
 type Screen = 'home' | 'report' | 'myreports' | 'detail' | 'login';
@@ -10,10 +10,32 @@ type Screen = 'home' | 'report' | 'myreports' | 'detail' | 'login';
 export default function UserApp() {
   const [screen, setScreen] = useState<Screen>('login');
   const [userName, setUserName] = useState('');
-  const [reports, setReports] = useState<IssueReport[]>(MOCK_REPORTS.filter(r => r.reportedBy === '김민준'));
+  const [reports, setReports] = useState<IssueReport[]>([]);       // 내 신고
+  const [allReports, setAllReports] = useState<IssueReport[]>(loadReports()); // 전체 (지도용)
   const [selectedReport, setSelectedReport] = useState<IssueReport | null>(null);
-  const [newNotifications] = useState(1);
+  const [statusNotif, setStatusNotif] = useState<IssueReport | null>(null); // 관리자 처리 알림
   const [mapSelected, setMapSelected] = useState<{ building: typeof BUILDINGS[0]; reports: IssueReport[] } | null>(null);
+
+  // 다른 탭(관리자 앱)에서 상태 변경 시 반영
+  useEffect(() => {
+    if (!userName) return;
+    const handler = () => {
+      const fresh = loadReports();
+      const myFresh = fresh.filter(r => r.reportedBy === userName);
+      // 상태가 바뀐 내 신고 찾아 알림 표시
+      setReports(prev => {
+        const changed = myFresh.find(nr => {
+          const old = prev.find(o => o.id === nr.id);
+          return old && old.status !== nr.status;
+        });
+        if (changed) setStatusNotif(changed);
+        return myFresh;
+      });
+      setAllReports(fresh);
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, [userName]);
 
   // New report form state
   const [form, setForm] = useState({
@@ -42,7 +64,10 @@ export default function UserApp() {
           appType="user"
           onLogin={(id, pw) => {
             if (USER_ACCOUNTS[id] === pw) {
+              const all = loadReports();
               setUserName(id);
+              setAllReports(all);
+              setReports(all.filter(r => r.reportedBy === id));
               setScreen('home');
               return true;
             }
@@ -61,7 +86,7 @@ export default function UserApp() {
     const handleSubmit = () => {
       if (!form.title || !form.category || !form.buildingId) return;
       const newReport: IssueReport = {
-        id: `RPT-${String(reports.length + 100).padStart(3, '0')}`,
+        id: `RPT-U${Date.now()}`,
         title: form.title,
         category: form.category,
         description: form.description,
@@ -77,7 +102,9 @@ export default function UserApp() {
         comments: [],
         imageUrl: form.imagePreview,
       };
-      setReports(prev => [newReport, ...prev]);
+      storeAddReport(newReport);                          // localStorage에 저장
+      setReports(prev => [newReport, ...prev]);           // 내 신고 목록 갱신
+      setAllReports(loadReports());                       // 지도 데이터 갱신
       setSubmitted(true);
     };
 
@@ -336,7 +363,6 @@ export default function UserApp() {
   }
 
   // ── Home ───────────────────────────────────────────────────────
-  const allReports = [...MOCK_REPORTS, ...reports.filter(r => !MOCK_REPORTS.find(m => m.id === r.id))];
   const myCount = reports.length;
   const inProgressCount = reports.filter(r => r.status === '처리중').length;
   const completedCount = reports.filter(r => r.status === '완료').length;
@@ -350,14 +376,28 @@ export default function UserApp() {
 
   return (
     <div className="app-container flex flex-col min-h-screen bg-gray-50">
+      {/* 관리자 처리 알림 배너 */}
+      {statusNotif && (
+        <div className="fixed top-4 left-4 right-4 z-50 rounded-2xl p-4 shadow-lg border-l-4 bg-white flex items-start gap-3"
+          style={{ borderLeftColor: '#0f9d58' }}>
+          <span className="text-2xl">✅</span>
+          <div className="flex-1">
+            <div className="font-bold text-sm text-gray-800">신고가 처리됐습니다!</div>
+            <div className="text-xs text-gray-600 mt-0.5 truncate">{statusNotif.title}</div>
+            <div className="text-xs font-medium mt-1" style={{ color: '#0f9d58' }}>상태: {statusNotif.status}</div>
+          </div>
+          <button onClick={() => setStatusNotif(null)} className="text-gray-400 text-lg">✕</button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="px-5 pt-12 pb-6" style={{ background: 'linear-gradient(135deg, #003670 0%, #004a99 100%)' }}>
         <div className="flex items-center justify-between mb-4">
           <SuwonLogo size={36} variant="dark" showText />
           <div className="relative">
             <button className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white text-lg">🔔</button>
-            {newNotifications > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ background: '#E9B800', color: '#003670' }}>{newNotifications}</span>
+            {statusNotif && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ background: '#E9B800', color: '#003670' }}>1</span>
             )}
           </div>
         </div>
