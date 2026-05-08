@@ -27,16 +27,26 @@ export default function UserApp() {
   const [submitted, setSubmitted] = useState(false);
 
   // ── Login ────────────────────────────────────────────────────
+  const USER_ACCOUNTS: Record<string, string> = {
+    'sw2024001': 'Suwon1!',
+    'sw2024002': 'Suwon2!',
+    'sw2024003': 'Suwon3!',
+    'sw2024004': 'Suwon4!',
+    'sw2024005': 'Suwon5!',
+  };
+
   if (screen === 'login') {
     return (
       <div className="app-container">
         <PortalLogin
           appType="user"
-          onLogin={(id, _pw) => {
-            if (!id) return false;
-            setUserName(id);
-            setScreen('home');
-            return true;
+          onLogin={(id, pw) => {
+            if (USER_ACCOUNTS[id] === pw) {
+              setUserName(id);
+              setScreen('home');
+              return true;
+            }
+            return false;
           }}
         />
       </div>
