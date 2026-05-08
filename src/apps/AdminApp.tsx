@@ -381,20 +381,32 @@ export default function AdminApp() {
           <div className="text-xs font-bold" style={{ color: '#64748b' }}>관리자 대시보드 · 구역 {selectedZone}</div>
           <div className="text-lg font-extrabold" style={{ color: '#0f172a' }}>{adminName}</div>
         </div>
-        <button
-          onClick={() => setScreen('list')}
-          className="relative w-10 h-10 rounded-xl flex items-center justify-center"
-          style={{ background: '#f1f5f9' }}
-        >
-          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#374151" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-          </svg>
-          {pendingCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-extrabold flex items-center justify-center text-white" style={{ background: '#ef4444' }}>
-              {pendingCount}
-            </span>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setScreen('list')}
+            className="relative w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: '#f1f5f9' }}
+          >
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#374151" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            {pendingCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-extrabold flex items-center justify-center text-white" style={{ background: '#ef4444' }}>
+                {pendingCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => { setScreen('login'); setAdminName(''); setReports([]); }}
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: '#f1f5f9' }}
+            title="로그아웃"
+          >
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#374151" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Stats */}

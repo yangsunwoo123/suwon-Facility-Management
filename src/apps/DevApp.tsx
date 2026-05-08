@@ -387,9 +387,21 @@ export default function DevApp() {
               <div className="text-xs font-mono" style={{ color: '#64748b' }}>Developer Console</div>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: '#16a34a18', border: '1px solid #16a34a40' }}>
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-green-400 text-xs font-mono font-bold">ONLINE</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: '#16a34a18', border: '1px solid #16a34a40' }}>
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-green-400 text-xs font-mono font-bold">ONLINE</span>
+            </div>
+            <button
+              onClick={() => setScreen('login')}
+              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: '#1e293b' }}
+              title="로그아웃"
+            >
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#64748b" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
           </div>
         </div>
         <h1 className="text-white text-xl font-extrabold">시스템 대시보드</h1>

@@ -3,6 +3,7 @@ import PortalLogin from '../components/PortalLogin';
 import { BUILDINGS, CATEGORIES, STATUS_CONFIG, ZONES, PRIORITY_COLORS } from '../data/campus';
 import { loadReports, addReport as storeAddReport, loadAnnouncements } from '../data/store';
 import type { IssueCategory, IssueReport, Announcement } from '../data/types';
+import SportsBookingApp from './SportsBookingApp';
 
 type Screen = 'home' | 'report' | 'myreports' | 'detail' | 'login' | 'announcements';
 
@@ -18,6 +19,7 @@ export default function UserApp() {
   const [mapSelected, setMapSelected] = useState<{ building: typeof BUILDINGS[0]; reports: IssueReport[] } | null>(null);
   const [mapZoneFilter, setMapZoneFilter] = useState('ALL');
   const [announcements, setAnnouncements] = useState<Announcement[]>(loadAnnouncements());
+  const [showSports, setShowSports] = useState(false);
 
   useEffect(() => {
     if (!userName) return;
@@ -86,6 +88,11 @@ export default function UserApp() {
         />
       </div>
     );
+  }
+
+  // ── Sports Booking ────────────────────────────────────────────
+  if (showSports) {
+    return <SportsBookingApp onBack={() => setShowSports(false)} userName={userName} />;
   }
 
   // ── Report Form ───────────────────────────────────────────────
@@ -541,10 +548,10 @@ export default function UserApp() {
   const completedCount = reports.filter(r => r.status === '완료').length;
 
   const QUICK_CATS = [
-    { id: '전기', icon: '⚡', bg: '#fef9c3', label: '전기 문제' },
-    { id: '수도', icon: '🚿', bg: '#dbeafe', label: '수도 문제' },
-    { id: '파손', icon: '🔨', bg: '#fee2e2', label: '시설 파손' },
-    { id: '기타', icon: '📋', bg: '#f3f4f6', label: '기타' },
+    { id: '전기/전력', icon: '⚡', bg: '#fef9c3', label: '전기 문제' },
+    { id: '수도/위생', icon: '🚿', bg: '#dbeafe', label: '수도 문제' },
+    { id: '시설파손', icon: '🔨', bg: '#fee2e2', label: '시설 파손' },
+    { id: '기타',     icon: '📋', bg: '#f3f4f6', label: '기타' },
   ];
 
   return (
@@ -573,10 +580,13 @@ export default function UserApp() {
         </div>
         <div className="relative">
           <button
+            onClick={() => {
+              if (statusNotif) setStatusNotif(null);
+            }}
             className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: '#f1f5f9' }}
+            style={{ background: statusNotif ? '#fee2e2' : '#f1f5f9' }}
           >
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#374151" strokeWidth="2">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={statusNotif ? '#dc2626' : '#374151'} strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             {statusNotif && (
@@ -652,6 +662,26 @@ export default function UserApp() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Sports facility booking banner */}
+      <div className="px-4 pt-5">
+        <button
+          onClick={() => setShowSports(true)}
+          className="w-full rounded-2xl p-4 text-left relative overflow-hidden active:scale-98 transition border"
+          style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)', borderColor: '#1e3a5f' }}
+        >
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-5xl opacity-20">⚽</div>
+          <div className="text-xs font-extrabold uppercase tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>스포츠 시설 예약</div>
+          <div className="text-sm font-bold text-white">풋살장 · 테니스장 대관 신청</div>
+          <div className="flex items-center gap-3 mt-2">
+            {['⚽ 풋살장(대운동장)', '🏟️ 풋살장(법정대)', '🎾 테니스장'].map(t => (
+              <span key={t} className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)' }}>
+                {t}
+              </span>
+            ))}
+          </div>
+        </button>
       </div>
 
       {/* Campus map */}
