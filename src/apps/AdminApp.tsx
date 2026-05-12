@@ -2,12 +2,22 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PortalLogin from '../components/PortalLogin';
 import { CATEGORIES, STATUS_CONFIG, PRIORITY_COLORS } from '../data/campus';
-import { loadReports, updateReport as storeUpdateReport, loadAnnouncements, addAnnouncement } from '../data/store';
-import type { IssueReport, IssueStatus, ZoneId, Announcement } from '../data/types';
+import { loadReports, updateReport as storeUpdateReport, loadAnnouncements, addAnnouncement, loadSportsApplications, updateSportsApplication } from '../data/store';
+import type { IssueReport, IssueStatus, ZoneId, Announcement, SportsApplication } from '../data/types';
+import { SPORTS_FACILITIES } from '../data/sportsData';
 
-type Screen = 'login' | 'dashboard' | 'list' | 'detail';
+type AdminType = 'maintenance' | 'rental';
+type Screen = 'login' | 'dashboard' | 'list' | 'detail' | 'rental-dashboard' | 'rental-detail';
 
 const PRIMARY = '#1a56db';
+
+const RENTAL_STATUS_CFG: Record<string, { color: string; bg: string }> = {
+  '대기':    { color: '#d97706', bg: '#fef3c7' },
+  '승인':    { color: '#059669', bg: '#d1fae5' },
+  '반려':    { color: '#dc2626', bg: '#fee2e2' },
+  '반납대기': { color: '#7c3aed', bg: '#f5f3ff' },
+  '반납완료': { color: '#6b7280', bg: '#f1f5f9' },
+};
 
 const ADMIN_ACCOUNTS: { id: string; zone: ZoneId; name: string }[] = [
   { id: 'mgr_a', zone: 'A', name: '공학관 관리팀' },
@@ -34,25 +44,45 @@ export default function AdminApp() {
   const [annTitle, setAnnTitle] = useState('');
   const [annContent, setAnnContent] = useState('');
   const [showAnnForm, setShowAnnForm] = useState(false);
+  // Rental team state
+  const [adminType, setAdminType] = useState<AdminType>('maintenance');
+  const [sportsApps, setSportsApps] = useState<SportsApplication[]>([]);
+  const [selectedSportsApp, setSelectedSportsApp] = useState<SportsApplication | null>(null);
+  const [rentalTab, setRentalTab] = useState<'pending' | 'return' | 'history'>('pending');
 
   useEffect(() => {
     if (screen === 'login') return;
     const handler = () => {
-      const fresh = loadReports().filter(r => r.zone === selectedZone);
-      setReports(prev => {
-        const newOnes = fresh.filter(nr => !prev.find(p => p.id === nr.id));
-        if (newOnes.length > 0) setNotification({ visible: true, report: newOnes[0] });
-        return fresh;
-      });
+      if (adminType === 'rental') {
+        setSportsApps(loadSportsApplications());
+      } else {
+        const fresh = loadReports().filter(r => r.zone === selectedZone);
+        setReports(prev => {
+          const newOnes = fresh.filter(nr => !prev.find(p => p.id === nr.id));
+          if (newOnes.length > 0) setNotification({ visible: true, report: newOnes[0] });
+          return fresh;
+        });
+      }
       setAnnouncements(loadAnnouncements());
     };
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
-  }, [screen, selectedZone]);
+  }, [screen, selectedZone, adminType]);
 
   const handleAdminLogin = (id: string, pw: string): boolean => {
-    const account = ADMIN_ACCOUNTS.find(a => a.id === id.toLowerCase());
+    // 시설 대관팀 계정
+    const rentalId = id.toLowerCase();
+    if ((rentalId === 'rental' || rentalId === 'rental1' || rentalId === 'rental2') && (pw === '1234' || pw === 'admin')) {
+      setAdminType('rental');
+      setAdminName('시설 대관팀');
+      setSportsApps(loadSportsApplications());
+      setScreen('rental-dashboard');
+      return true;
+    }
+    // 시설보수관리팀 계정
+    const account = ADMIN_ACCOUNTS.find(a => a.id === rentalId);
     if (!account || (pw !== '1234' && pw !== 'admin')) return false;
+    setAdminType('maintenance');
     setSelectedZone(account.zone);
     setAdminName(account.name);
     setReports(loadReports().filter(r => r.zone === account.zone));
@@ -132,6 +162,217 @@ export default function AdminApp() {
       </svg>
     </button>
   );
+
+  // ── Rental Detail ────────────────────────────────────────────
+  if (screen === 'rental-detail' && adminType === 'rental' && selectedSportsApp) {
+    const app = sportsApps.find(a => a.id === selectedSportsApp.id) ?? selectedSportsApp;
+    const fac = SPORTS_FACILITIES.find(f => f.id === app.facilityId);
+    const sc = RENTAL_STATUS_CFG[app.status] ?? RENTAL_STATUS_CFG['대기'];
+
+    const doApprove = () => {
+      updateSportsApplication(app.id, { status: '승인', updatedAt: new Date().toISOString() });
+      const updated = loadSportsApplications();
+      setSportsApps(updated);
+      setSelectedSportsApp(updated.find(a => a.id === app.id) ?? null);
+    };
+    const doReject = () => {
+      updateSportsApplication(app.id, { status: '반려', updatedAt: new Date().toISOString() });
+      const updated = loadSportsApplications();
+      setSportsApps(updated);
+      setSelectedSportsApp(updated.find(a => a.id === app.id) ?? null);
+    };
+    const doApproveReturn = () => {
+      updateSportsApplication(app.id, { status: '반납완료', updatedAt: new Date().toISOString() });
+      const updated = loadSportsApplications();
+      setSportsApps(updated);
+      setSelectedSportsApp(updated.find(a => a.id === app.id) ?? null);
+    };
+
+    return (
+      <div className="app-container flex flex-col min-h-screen" style={{ background: '#f8fafc' }}>
+        <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center gap-3 sticky top-0 z-10">
+          <BackBtn to="rental-dashboard" />
+          <h2 className="font-extrabold text-lg flex-1" style={{ color: '#0f172a' }}>대관 신청 상세</h2>
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: sc.bg, color: sc.color }}>
+            {app.status}
+          </span>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">{fac?.emoji}</span>
+              <div>
+                <div className="font-extrabold text-base" style={{ color: '#0f172a' }}>{app.facilityName}</div>
+                <div className="text-xs font-mono" style={{ color: '#94a3b8' }}>{app.id}</div>
+              </div>
+            </div>
+            {([
+              ['신청일자', app.applicationDate],
+              ['신청자', app.applicantName],
+              ['연락처', app.applicantPhone],
+              ['소속', app.department],
+              ['대관일', app.rentalDate],
+              ['시간', `${app.rentalStartTime} ~ ${app.rentalEndTime}`],
+              ['행사명', app.eventName],
+              ['신청사유', app.reason],
+              ['참가인원', `${app.participantCount}명`],
+            ] as [string, string][]).map(([label, value]) => (
+              <div key={label} className="flex gap-3 py-1.5 border-b border-gray-50 last:border-0">
+                <span className="w-20 text-xs font-bold flex-shrink-0" style={{ color: '#94a3b8' }}>{label}</span>
+                <span className="text-xs flex-1" style={{ color: '#1e293b' }}>{value}</span>
+              </div>
+            ))}
+          </div>
+
+          {app.returnPhotoUrl && (
+            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+              <h4 className="text-sm font-extrabold mb-3" style={{ color: '#0f172a' }}>반납 현장 사진</h4>
+              <img src={app.returnPhotoUrl} alt="반납 현장 사진" className="w-full rounded-xl object-cover" style={{ maxHeight: 260 }} />
+              {app.returnRequestedAt && (
+                <div className="text-xs mt-2" style={{ color: '#94a3b8' }}>
+                  반납 신청: {new Date(app.returnRequestedAt).toLocaleString('ko-KR')}
+                </div>
+              )}
+            </div>
+          )}
+
+          {app.status === '대기' && (
+            <div className="space-y-2">
+              <button onClick={doApprove} className="w-full py-4 rounded-xl font-extrabold text-white text-base" style={{ background: '#059669' }}>
+                ✅ 대관 승인
+              </button>
+              <button onClick={doReject} className="w-full py-3.5 rounded-xl font-extrabold text-sm" style={{ background: '#fee2e2', color: '#dc2626' }}>
+                ✕ 반려
+              </button>
+            </div>
+          )}
+          {app.status === '반납대기' && (
+            <button onClick={doApproveReturn} className="w-full py-4 rounded-xl font-extrabold text-white text-base" style={{ background: '#7c3aed' }}>
+              ✅ 반납 승인
+            </button>
+          )}
+          {(app.status === '승인' || app.status === '반납완료' || app.status === '반려') && (
+            <div className="py-3 rounded-xl text-center text-sm font-bold" style={{ background: sc.bg, color: sc.color }}>
+              {app.status === '승인' ? '✅ 승인된 신청 (사용 중 또는 반납 대기)' : app.status === '반납완료' ? '✅ 반납 처리 완료' : '✕ 반려된 신청'}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Rental Dashboard ──────────────────────────────────────────
+  if (screen === 'rental-dashboard' && adminType === 'rental') {
+    const pendingApps = sportsApps.filter(a => a.status === '대기');
+    const returnApps  = sportsApps.filter(a => a.status === '반납대기');
+    const historyApps = sportsApps.filter(a => ['승인', '반려', '반납완료'].includes(a.status));
+    const currentApps = rentalTab === 'pending' ? pendingApps : rentalTab === 'return' ? returnApps : historyApps;
+
+    return (
+      <div className="app-container flex flex-col min-h-screen" style={{ background: '#f8fafc' }}>
+        <div className="bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between sticky top-0 z-10">
+          <div>
+            <div className="text-xs font-bold" style={{ color: '#64748b' }}>관리자 대시보드</div>
+            <div className="text-lg font-extrabold" style={{ color: '#0f172a' }}>시설 대관팀</div>
+          </div>
+          <button
+            onClick={() => { setScreen('login'); setAdminName(''); setSportsApps([]); setAdminType('maintenance'); }}
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: '#f1f5f9' }}
+            title="로그아웃"
+          >
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#374151" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-4 pt-5 pb-3">
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: '승인 대기', value: pendingApps.length, color: '#d97706', bg: '#fef3c7' },
+              { label: '반납 확인', value: returnApps.length,  color: '#7c3aed', bg: '#f5f3ff' },
+              { label: '처리 완료', value: historyApps.length, color: '#059669', bg: '#d1fae5' },
+            ].map(s => (
+              <div key={s.label} className="rounded-2xl py-3 px-2 text-center" style={{ background: s.bg }}>
+                <div className="text-xl font-extrabold" style={{ color: s.color }}>{s.value}</div>
+                <div className="text-xs font-medium mt-0.5" style={{ color: s.color + 'cc' }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="px-4 pb-3 flex gap-2">
+          {([
+            ['pending', '승인 대기', pendingApps.length],
+            ['return',  '반납 확인', returnApps.length],
+            ['history', '완료 내역', historyApps.length],
+          ] as const).map(([key, label, count]) => (
+            <button
+              key={key}
+              onClick={() => setRentalTab(key)}
+              className="flex-1 py-2.5 rounded-xl text-xs font-bold relative"
+              style={rentalTab === key ? { background: PRIMARY, color: 'white' } : { background: '#f1f5f9', color: '#64748b' }}
+            >
+              {label}
+              {count > 0 && rentalTab !== key && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-xs font-extrabold flex items-center justify-center text-white"
+                  style={{ background: '#ef4444', fontSize: 9 }}>
+                  {count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-3">
+          {currentApps.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48" style={{ color: '#94a3b8' }}>
+              <div className="text-4xl mb-3">📭</div>
+              <p className="text-sm font-medium">
+                {rentalTab === 'pending' ? '대기 중인 신청이 없습니다' : rentalTab === 'return' ? '반납 확인 요청이 없습니다' : '완료된 내역이 없습니다'}
+              </p>
+            </div>
+          ) : (
+            currentApps.map(app => {
+              const fac = SPORTS_FACILITIES.find(f => f.id === app.facilityId);
+              const sc = RENTAL_STATUS_CFG[app.status] ?? RENTAL_STATUS_CFG['대기'];
+              return (
+                <button
+                  key={app.id}
+                  onClick={() => { setSelectedSportsApp(app); setScreen('rental-detail'); }}
+                  className="w-full text-left bg-white rounded-2xl p-4 border border-gray-100 shadow-sm active:scale-98 transition"
+                >
+                  <div className="flex items-start justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{fac?.emoji}</span>
+                      <span className="font-bold text-sm" style={{ color: '#0f172a' }}>{app.facilityName}</span>
+                    </div>
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0" style={{ background: sc.bg, color: sc.color }}>
+                      {app.status}
+                    </span>
+                  </div>
+                  <div className="text-xs" style={{ color: '#64748b' }}>
+                    📅 {app.rentalDate} · {app.rentalStartTime}~{app.rentalEndTime}
+                  </div>
+                  <div className="text-xs mt-0.5 flex gap-2" style={{ color: '#94a3b8' }}>
+                    <span>{app.applicantName}</span><span>·</span>
+                    <span>{app.department}</span><span>·</span>
+                    <span>{app.participantCount}명</span>
+                  </div>
+                  {app.status === '반납대기' && (
+                    <div className="mt-2 text-xs px-2 py-1 rounded-lg inline-block" style={{ background: '#f5f3ff', color: '#7c3aed' }}>
+                      📸 반납 사진 확인 필요
+                    </div>
+                  )}
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // ── Login ─────────────────────────────────────────────────────
   if (screen === 'login') {
@@ -397,7 +638,7 @@ export default function AdminApp() {
             )}
           </button>
           <button
-            onClick={() => { setScreen('login'); setAdminName(''); setReports([]); }}
+            onClick={() => { setScreen('login'); setAdminName(''); setReports([]); setAdminType('maintenance'); }}
             className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{ background: '#f1f5f9' }}
             title="로그아웃"

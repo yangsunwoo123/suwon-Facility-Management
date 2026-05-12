@@ -674,9 +674,9 @@ export default function UserApp() {
           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-5xl opacity-20">⚽</div>
           <div className="text-xs font-extrabold uppercase tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>스포츠 시설 예약</div>
           <div className="text-sm font-bold text-white">풋살장 · 테니스장 대관 신청</div>
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center gap-2 mt-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
             {['⚽ 풋살장(대운동장)', '🏟️ 풋살장(법정대)', '🎾 테니스장'].map(t => (
-              <span key={t} className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)' }}>
+              <span key={t} className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0" style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)' }}>
                 {t}
               </span>
             ))}

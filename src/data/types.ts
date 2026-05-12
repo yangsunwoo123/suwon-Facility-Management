@@ -105,7 +105,7 @@ export interface FacilityApplication {
 
 // ── Sports Facility Rental ───────────────────────────────────────
 export type SportsFacilityId = 'futsal-main' | 'futsal-law' | 'tennis';
-export type SportsAppStatus = '대기' | '승인' | '반려';
+export type SportsAppStatus = '대기' | '승인' | '반려' | '반납대기' | '반납완료';
 
 export interface SportsApplication {
   id: string;
@@ -127,4 +127,6 @@ export interface SportsApplication {
   appliedAt: string;
   updatedAt: string;
   signatureDataUrl?: string;
+  returnPhotoUrl?: string;
+  returnRequestedAt?: string;
 }

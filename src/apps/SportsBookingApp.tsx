@@ -3,15 +3,17 @@ import { loadSportsApplications, addSportsApplication, updateSportsApplication }
 import { SPORTS_FACILITIES } from '../data/sportsData';
 import type { SportsApplication, SportsFacilityId } from '../data/types';
 
-type Screen = 'calendar' | 'apply' | 'myapps' | 'appdetail' | 'sign';
+type Screen = 'calendar' | 'apply' | 'myapps' | 'appdetail' | 'sign' | 'return';
 
 const PRIMARY = '#1a56db';
 
-const STATUS_CFG = {
-  '대기': { color: '#d97706', bg: '#fef3c7' },
-  '승인': { color: '#059669', bg: '#d1fae5' },
-  '반려': { color: '#dc2626', bg: '#fee2e2' },
-} as const;
+const STATUS_CFG: Record<string, { color: string; bg: string }> = {
+  '대기':    { color: '#d97706', bg: '#fef3c7' },
+  '승인':    { color: '#059669', bg: '#d1fae5' },
+  '반려':    { color: '#dc2626', bg: '#fee2e2' },
+  '반납대기': { color: '#7c3aed', bg: '#f5f3ff' },
+  '반납완료': { color: '#6b7280', bg: '#f1f5f9' },
+};
 
 // ── Time helpers ──────────────────────────────────────────────────
 function timeToMin(t: string) {
@@ -227,6 +229,7 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
   const [fCount, setFCount]           = useState('');
   const [fNotes, setFNotes]           = useState('');
   const [fError, setFError]           = useState('');
+  const [returnPhotoUrl, setReturnPhotoUrl] = useState('');
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -312,7 +315,7 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
 
   const reservedDates: Record<string, { fac: typeof SPORTS_FACILITIES[0]; status: string }[]> = {};
   filteredApps.forEach(a => {
-    if (a.status === '반려') return;
+    if (a.status === '반려' || a.status === '반납완료') return;
     if (!reservedDates[a.rentalDate]) reservedDates[a.rentalDate] = [];
     const fac = SPORTS_FACILITIES.find(f => f.id === a.facilityId)!;
     reservedDates[a.rentalDate].push({ fac, status: a.status });
@@ -549,6 +552,84 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
     );
   }
 
+  // ── Screen: Return ────────────────────────────────────────────
+  if (screen === 'return' && selectedApp) {
+    const handleReturnSubmit = () => {
+      updateSportsApplication(selectedApp.id, {
+        status: '반납대기',
+        returnPhotoUrl,
+        returnRequestedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      setApps(loadSportsApplications());
+      setSelectedApp(prev => prev ? { ...prev, status: '반납대기', returnPhotoUrl } : null);
+      setReturnPhotoUrl('');
+      setScreen('appdetail');
+    };
+
+    return (
+      <div className="app-container flex flex-col min-h-screen" style={{ background: '#f8fafc' }}>
+        <BackBtn onBack={() => setScreen('appdetail')} label="시설 반납" />
+        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <h3 className="font-extrabold text-base mb-2" style={{ color: '#0f172a' }}>시설 반납 사진 촬영</h3>
+            <p className="text-sm leading-relaxed mb-3" style={{ color: '#64748b' }}>
+              시설 이용 후 현재 상태를 사진으로 남겨주세요. 관리팀이 확인 후 반납을 승인합니다.
+            </p>
+            <div className="rounded-xl p-3 text-xs leading-relaxed" style={{ background: '#fef3c7', color: '#92400e' }}>
+              ⚠️ <strong>현장에서 카메라로 직접 촬영</strong>해야 합니다.<br />갤러리에서 기존 사진을 불러올 수 없습니다.
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            {returnPhotoUrl ? (
+              <div className="relative">
+                <img src={returnPhotoUrl} alt="반납 현장 사진" className="w-full rounded-xl object-cover" style={{ maxHeight: 300 }} />
+                <button
+                  onClick={() => setReturnPhotoUrl('')}
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                  style={{ background: '#ef4444' }}
+                >✕</button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center rounded-2xl cursor-pointer py-10"
+                style={{ border: '2px dashed #bfdbfe', background: '#f8fafc' }}>
+                <div className="text-5xl mb-3">📷</div>
+                <div className="font-bold text-sm mb-1" style={{ color: PRIMARY }}>카메라로 촬영하기</div>
+                <div className="text-xs text-center" style={{ color: '#94a3b8' }}>
+                  갤러리 선택 불가<br />현장에서 직접 촬영만 가능
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onloadend = () => setReturnPhotoUrl(reader.result as string);
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </label>
+            )}
+          </div>
+
+          {returnPhotoUrl && (
+            <button
+              onClick={handleReturnSubmit}
+              className="w-full py-4 rounded-xl font-extrabold text-white text-base"
+              style={{ background: '#7c3aed' }}
+            >
+              반납 신청하기
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // ── Screen: App Detail ─────────────────────────────────────────
   if (screen === 'appdetail' && selectedApp) {
     const sc = STATUS_CFG[selectedApp.status];
@@ -616,6 +697,29 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
               🖨️ 서명된 신청서 다시 출력
             </button>
           )}
+          {/* Return button (승인 후 반납) */}
+          {selectedApp.status === '승인' && (
+            <button
+              onClick={() => setScreen('return')}
+              className="w-full py-3.5 rounded-xl font-bold text-white flex items-center justify-center gap-2"
+              style={{ background: '#7c3aed' }}
+            >
+              <span>📸</span> 시설 반납하기
+            </button>
+          )}
+          {/* Return status display */}
+          {(selectedApp.status === '반납대기' || selectedApp.status === '반납완료') && (
+            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+              <h4 className="text-sm font-extrabold mb-2" style={{ color: '#0f172a' }}>반납 사진</h4>
+              {selectedApp.returnPhotoUrl && (
+                <img src={selectedApp.returnPhotoUrl} alt="반납 현장 사진" className="w-full rounded-xl object-cover mb-2" style={{ maxHeight: 200 }} />
+              )}
+              <div className="text-xs font-bold px-3 py-2 rounded-lg text-center"
+                style={{ background: STATUS_CFG[selectedApp.status].bg, color: STATUS_CFG[selectedApp.status].color }}>
+                {selectedApp.status === '반납대기' ? '⏳ 반납 승인 대기 중' : '✅ 반납 완료'}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -661,6 +765,11 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
                     {app.status === '승인' && !app.signatureDataUrl && (
                       <div className="mt-2 text-xs px-2 py-1 rounded-lg inline-block" style={{ background: '#d1fae5', color: '#059669' }}>
                         ✍️ 서명 후 출력 가능
+                      </div>
+                    )}
+                    {app.status === '반납대기' && (
+                      <div className="mt-2 text-xs px-2 py-1 rounded-lg inline-block" style={{ background: '#f5f3ff', color: '#7c3aed' }}>
+                        ⏳ 반납 승인 대기중
                       </div>
                     )}
                   </button>
