@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PortalLogin from '../components/PortalLogin';
 import { CATEGORIES, STATUS_CONFIG, PRIORITY_COLORS } from '../data/campus';
-import { loadReports, updateReport as storeUpdateReport, loadAnnouncements, addAnnouncement, loadSportsApplications, updateSportsApplication } from '../data/store';
-import type { IssueReport, IssueStatus, ZoneId, Announcement, SportsApplication } from '../data/types';
+import { loadReports, updateReport as storeUpdateReport, loadAnnouncements, addAnnouncement, loadSportsApplications, updateSportsApplication, addPenalty, getUserPenalties, isUserSuspended, suspendUser, unsuspendUser } from '../data/store';
+import type { IssueReport, IssueStatus, ZoneId, Announcement, SportsApplication, Penalty, PenaltyReason } from '../data/types';
 import { SPORTS_FACILITIES } from '../data/sportsData';
 
 type AdminType = 'maintenance' | 'rental';
@@ -49,6 +49,12 @@ export default function AdminApp() {
   const [sportsApps, setSportsApps] = useState<SportsApplication[]>([]);
   const [selectedSportsApp, setSelectedSportsApp] = useState<SportsApplication | null>(null);
   const [rentalTab, setRentalTab] = useState<'pending' | 'return' | 'history'>('pending');
+  // Penalty / suspension state
+  const [userPenalties, setUserPenalties] = useState<Penalty[]>([]);
+  const [showPenaltyForm, setShowPenaltyForm] = useState(false);
+  const [penaltyReason, setPenaltyReason] = useState<PenaltyReason>('예약 후 미이용');
+  const [penaltyDetail, setPenaltyDetail] = useState('');
+  const [appUserSuspended, setAppUserSuspended] = useState(false);
 
   useEffect(() => {
     if (screen === 'login') return;
@@ -68,6 +74,15 @@ export default function AdminApp() {
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
   }, [screen, selectedZone, adminType]);
+
+  useEffect(() => {
+    if (!selectedSportsApp) return;
+    setUserPenalties(getUserPenalties(selectedSportsApp.applicantId));
+    setAppUserSuspended(isUserSuspended(selectedSportsApp.applicantId));
+    setShowPenaltyForm(false);
+    setPenaltyDetail('');
+    setPenaltyReason('예약 후 미이용');
+  }, [selectedSportsApp?.id]);
 
   const handleAdminLogin = (id: string, pw: string): boolean => {
     // 시설 대관팀 계정
@@ -256,6 +271,133 @@ export default function AdminApp() {
               {app.status === '승인' ? '✅ 승인된 신청 (사용 중 또는 반납 대기)' : app.status === '반납완료' ? '✅ 반납 처리 완료' : '✕ 반려된 신청'}
             </div>
           )}
+
+          {/* 제재 관리 section */}
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-extrabold" style={{ color: '#0f172a' }}>제재 현황</h4>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full"
+                  style={{
+                    background: userPenalties.length >= 3 ? '#fee2e2' : userPenalties.length > 0 ? '#fef3c7' : '#f0fdf4',
+                    color: userPenalties.length >= 3 ? '#dc2626' : userPenalties.length > 0 ? '#d97706' : '#059669',
+                  }}>
+                  제재 {userPenalties.length}회
+                </span>
+                {appUserSuspended && (
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: '#fee2e2', color: '#dc2626' }}>
+                    🚫 이용정지
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Suspension controls */}
+            {appUserSuspended ? (
+              <button
+                onClick={() => {
+                  unsuspendUser(app.applicantId);
+                  setAppUserSuspended(false);
+                }}
+                className="w-full py-2.5 rounded-xl text-sm font-bold mb-3"
+                style={{ background: '#f1f5f9', color: '#059669' }}
+              >
+                ✅ 이용정지 해제
+              </button>
+            ) : userPenalties.length >= 3 ? (
+              <button
+                onClick={() => {
+                  suspendUser(app.applicantId, adminName);
+                  setAppUserSuspended(true);
+                }}
+                className="w-full py-2.5 rounded-xl text-sm font-bold text-white mb-3"
+                style={{ background: '#dc2626' }}
+              >
+                🚫 이용정지 부여
+              </button>
+            ) : null}
+
+            {/* Penalty list */}
+            {userPenalties.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {userPenalties.map((p, idx) => (
+                  <div key={p.id} className="rounded-xl px-3 py-2 text-xs" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+                    <div className="flex justify-between mb-0.5">
+                      <span className="font-bold" style={{ color: '#dc2626' }}>제재 {idx + 1}회 · {p.reason}</span>
+                      <span style={{ color: '#94a3b8' }}>{new Date(p.issuedAt).toLocaleDateString('ko-KR')}</span>
+                    </div>
+                    {p.detail && <p style={{ color: '#374151' }}>{p.detail}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Issue penalty form toggle */}
+            <button
+              onClick={() => setShowPenaltyForm(v => !v)}
+              className="w-full py-2.5 rounded-xl text-sm font-bold transition"
+              style={showPenaltyForm
+                ? { background: '#f1f5f9', color: '#64748b' }
+                : { background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }
+              }
+            >
+              {showPenaltyForm ? '취소' : '⚠️ 제재 부여'}
+            </button>
+
+            {/* Penalty form */}
+            {showPenaltyForm && (
+              <div className="mt-3 space-y-3">
+                <div>
+                  <label className="text-xs font-bold block mb-1.5" style={{ color: '#0f172a' }}>제재 사유</label>
+                  <select
+                    className="w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none"
+                    style={{ borderColor: '#e5e7eb', background: '#fafafa' }}
+                    value={penaltyReason}
+                    onChange={e => setPenaltyReason(e.target.value as PenaltyReason)}
+                  >
+                    {(['예약 후 미이용', '시설 훼손', '시설 불결 사용', '규정 위반', '기타'] as PenaltyReason[]).map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold block mb-1.5" style={{ color: '#0f172a' }}>상세 내용</label>
+                  <textarea
+                    className="w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none resize-none"
+                    style={{ borderColor: penaltyDetail ? '#dc2626' : '#e5e7eb', background: '#fafafa' }}
+                    rows={2}
+                    placeholder="제재 상세 내용을 입력하세요..."
+                    value={penaltyDetail}
+                    onChange={e => setPenaltyDetail(e.target.value)}
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    const newPenalty: Penalty = {
+                      id: `PEN-${Date.now()}`,
+                      userId: app.applicantId,
+                      reason: penaltyReason,
+                      detail: penaltyDetail,
+                      applicationId: app.id,
+                      facilityName: app.facilityName,
+                      rentalDate: app.rentalDate,
+                      issuedBy: adminName,
+                      issuedAt: new Date().toISOString(),
+                    };
+                    addPenalty(newPenalty);
+                    setUserPenalties(getUserPenalties(app.applicantId));
+                    setShowPenaltyForm(false);
+                    setPenaltyDetail('');
+                    setPenaltyReason('예약 후 미이용');
+                  }}
+                  className="w-full py-3 rounded-xl font-bold text-white text-sm"
+                  style={{ background: '#dc2626' }}
+                >
+                  제재 부여 확정
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );

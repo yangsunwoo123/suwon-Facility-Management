@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { loadSportsApplications, addSportsApplication, updateSportsApplication } from '../data/store';
-import { SPORTS_FACILITIES } from '../data/sportsData';
-import type { SportsApplication, SportsFacilityId } from '../data/types';
+import { loadSportsApplications, addSportsApplication, updateSportsApplication, getUserPenalties, isUserSuspended } from '../data/store';
+import { SPORTS_FACILITIES, FACILITY_MIN_PARTICIPANTS, VALID_USER_IDS } from '../data/sportsData';
+import type { SportsApplication, SportsFacilityId, Penalty } from '../data/types';
 
-type Screen = 'calendar' | 'apply' | 'myapps' | 'appdetail' | 'sign' | 'return';
+type Screen = 'calendar' | 'apply' | 'myapps' | 'appdetail' | 'sign' | 'return' | 'penalties';
 
 const PRIMARY = '#1a56db';
 
@@ -231,15 +231,35 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
   const [fError, setFError]           = useState('');
   const [returnPhotoUrl, setReturnPhotoUrl] = useState('');
 
+  // Penalty / suspension state
+  const [isSuspended, setIsSuspended] = useState(false);
+  const [userPenalties, setUserPenalties] = useState<Penalty[]>([]);
+  const [participants, setParticipants] = useState<string[]>([]);
+  const [participantStatuses, setParticipantStatuses] = useState<Array<'valid' | 'invalid' | 'empty'>>([]);
+
   const today = new Date().toISOString().split('T')[0];
 
   // Load / listen for changes
   useEffect(() => {
-    const refresh = () => setApps(loadSportsApplications());
+    const refresh = () => {
+      setApps(loadSportsApplications());
+      setIsSuspended(isUserSuspended(userName));
+      setUserPenalties(getUserPenalties(userName));
+    };
     refresh();
     window.addEventListener('storage', refresh);
     return () => window.removeEventListener('storage', refresh);
-  }, []);
+  }, [userName]);
+
+  // Reset participant fields when facility changes
+  useEffect(() => {
+    if (!fFacility) { setParticipants([]); setParticipantStatuses([]); return; }
+    const min = FACILITY_MIN_PARTICIPANTS[fFacility] ?? 1;
+    const newP = Array.from({ length: min }, (_, i) => i === 0 ? userName : '');
+    const newS: Array<'valid' | 'invalid' | 'empty'> = Array.from({ length: min }, (_, i) => i === 0 ? 'valid' : 'empty');
+    setParticipants(newP);
+    setParticipantStatuses(newS);
+  }, [fFacility, userName]);
 
   const myApps = apps.filter(a => a.applicantId === userName);
 
@@ -252,6 +272,18 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
     setFPhone(formatted);
   };
 
+  // ── Participant change handler ─────────────────────────────────
+  const handleParticipantChange = (idx: number, val: string) => {
+    const newP = [...participants];
+    newP[idx] = val.trim();
+    setParticipants(newP);
+    const newS = [...participantStatuses];
+    if (!val.trim()) newS[idx] = 'empty';
+    else if (VALID_USER_IDS.has(val.trim())) newS[idx] = 'valid';
+    else newS[idx] = 'invalid';
+    setParticipantStatuses(newS);
+  };
+
   // ── Open apply pre-filled with date ──────────────────────────
   const openApply = (date?: string) => {
     setFRentalDate(date ?? '');
@@ -261,8 +293,20 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
     setScreen('apply');
   };
 
+  // Computed values for apply screen
+  const allParticipantsValid = !fFacility || participants.every((_, i) => participantStatuses[i] === 'valid');
+  const minParticipants = fFacility ? (FACILITY_MIN_PARTICIPANTS[fFacility] ?? 1) : 0;
+
   // ── Submit ─────────────────────────────────────────────────────
   const handleSubmit = () => {
+    if (isSuspended) {
+      setFError('시설 대관 이용이 정지된 상태입니다. 관리팀에 문의하세요.');
+      return;
+    }
+    if (!allParticipantsValid) {
+      setFError('모든 참가자 아이디를 올바르게 입력해주세요.');
+      return;
+    }
     if (!fFacility || !fPhone || !fRentalDate || !fStartTime || !fEndTime || !fEventName || !fReason || !fDept || !fCount) {
       setFError('모든 필수 항목을 입력해주세요.');
       return;
@@ -298,6 +342,7 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
       department: fDept,
       participantCount: cnt,
       participantNotes: fNotes,
+      participantIds: [...participants],
       status: '대기',
       appliedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -341,6 +386,80 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
     setCalSelectedDate(null);
   };
 
+  // ── Screen: Penalties ──────────────────────────────────────────
+  if (screen === 'penalties') {
+    return (
+      <div className="app-container flex flex-col min-h-screen" style={{ background: '#f8fafc' }}>
+        <BackBtn onBack={() => setScreen('calendar')} label="내 제재 내역" />
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* Status banner */}
+          {isSuspended ? (
+            <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: '#fee2e2', border: '1px solid #fecaca' }}>
+              <div className="text-3xl">🚫</div>
+              <div>
+                <div className="font-extrabold text-base" style={{ color: '#dc2626' }}>이용정지 중</div>
+                <div className="text-xs mt-0.5" style={{ color: '#b91c1c' }}>현재 시설 대관 이용이 정지된 상태입니다.<br />시설 대관팀에 문의하세요.</div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: userPenalties.length >= 3 ? '#fef3c7' : '#f0fdf4', border: `1px solid ${userPenalties.length >= 3 ? '#fcd34d' : '#bbf7d0'}` }}>
+              <div className="text-3xl">{userPenalties.length >= 3 ? '⚠️' : '✅'}</div>
+              <div>
+                <div className="font-extrabold text-base" style={{ color: userPenalties.length >= 3 ? '#d97706' : '#059669' }}>
+                  제재 {userPenalties.length}회 누적
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: userPenalties.length >= 3 ? '#92400e' : '#166534' }}>
+                  {userPenalties.length >= 3 ? '제재 3회 이상 시 이용정지될 수 있습니다.' : '정상 이용 가능 상태입니다.'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Penalty list */}
+          {userPenalties.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16" style={{ color: '#94a3b8' }}>
+              <div className="text-5xl mb-3">🎉</div>
+              <p className="text-sm font-medium">제재 내역이 없습니다</p>
+            </div>
+          ) : (
+            userPenalties.map((p, idx) => (
+              <div key={p.id} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                <div className="flex items-start justify-between mb-2">
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: '#fee2e2', color: '#dc2626' }}>
+                    제재 {idx + 1}회
+                  </span>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: '#fef3c7', color: '#d97706' }}>
+                    {p.reason}
+                  </span>
+                </div>
+                <div className="space-y-1 text-xs" style={{ color: '#475569' }}>
+                  <div className="flex gap-2">
+                    <span className="font-bold w-16 flex-shrink-0" style={{ color: '#94a3b8' }}>시설</span>
+                    <span>{p.facilityName}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-bold w-16 flex-shrink-0" style={{ color: '#94a3b8' }}>대관일</span>
+                    <span>{p.rentalDate}</span>
+                  </div>
+                  {p.detail && (
+                    <div className="flex gap-2">
+                      <span className="font-bold w-16 flex-shrink-0" style={{ color: '#94a3b8' }}>사유</span>
+                      <span className="flex-1">{p.detail}</span>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <span className="font-bold w-16 flex-shrink-0" style={{ color: '#94a3b8' }}>부여일</span>
+                    <span>{new Date(p.issuedAt).toLocaleDateString('ko-KR')}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // ── Screen: Apply ──────────────────────────────────────────────
   if (screen === 'apply') {
     const appNum = `SA-${Date.now().toString().slice(-6)}`;
@@ -352,6 +471,17 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
       <div className="app-container flex flex-col min-h-screen" style={{ background: '#f8fafc' }}>
         <BackBtn onBack={() => setScreen('calendar')} label="대관 신청" />
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4 pb-10">
+
+          {/* Suspension banner */}
+          {isSuspended && (
+            <div className="mx-0 px-4 py-3 rounded-xl flex items-center gap-2 mb-0" style={{ background: '#fee2e2', border: '1px solid #fecaca' }}>
+              <span className="text-red-500 font-bold">🚫</span>
+              <div>
+                <div className="font-bold text-sm text-red-700">시설 대관 이용정지 상태</div>
+                <div className="text-xs text-red-600">현재 이용정지된 상태입니다. 시설 대관팀에 문의하세요.</div>
+              </div>
+            </div>
+          )}
 
           {/* 신청 정보 (읽기전용) */}
           <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-2">
@@ -488,6 +618,50 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
             />
           </Field>
 
+          {/* 참가자 아이디 입력 */}
+          {fFacility && (
+            <Field label={`참가자 아이디 입력 (최소 ${minParticipants}명)`} required>
+              <div className="space-y-2">
+                {Array.from({ length: minParticipants }, (_, i) => {
+                  const status = participantStatuses[i] ?? 'empty';
+                  const val = participants[i] ?? '';
+                  const isFirst = i === 0;
+                  return (
+                    <div key={i}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold w-5 flex-shrink-0 text-center" style={{ color: '#94a3b8' }}>{i + 1}</span>
+                        <div className="flex-1 relative">
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none"
+                            style={{
+                              borderColor: status === 'valid' ? '#059669' : status === 'invalid' ? '#dc2626' : '#e5e7eb',
+                              background: isFirst ? '#f1f5f9' : '#fafafa',
+                              color: isFirst ? '#64748b' : '#0f172a',
+                            }}
+                            placeholder={isFirst ? '신청자 (자동입력)' : '참가자 학번/아이디'}
+                            value={val}
+                            disabled={isFirst}
+                            onChange={e => handleParticipantChange(i, e.target.value)}
+                          />
+                          {status === 'valid' && !isFirst && (
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 font-bold">✓</span>
+                          )}
+                        </div>
+                      </div>
+                      {status === 'invalid' && (
+                        <p className="text-xs mt-1 ml-7" style={{ color: '#dc2626' }}>알 수 없는 계정입니다</p>
+                      )}
+                    </div>
+                  );
+                })}
+                <p className="text-xs ml-7" style={{ color: '#94a3b8' }}>
+                  등록된 수원대학교 포털 아이디를 입력하세요.
+                </p>
+              </div>
+            </Field>
+          )}
+
           {/* 참가자 명단 및 비고사항 */}
           <Field label="참가자 명단 및 비고사항">
             <textarea
@@ -509,7 +683,8 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
 
           <button
             onClick={handleSubmit}
-            className="w-full py-3.5 rounded-xl font-bold text-white text-sm"
+            disabled={isSuspended || !allParticipantsValid}
+            className="w-full py-3.5 rounded-xl font-bold text-white text-sm disabled:opacity-50"
             style={{ background: PRIMARY }}
           >
             신청 제출
@@ -730,7 +905,21 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
     const sorted = [...myApps].sort((a, b) => b.appliedAt.localeCompare(a.appliedAt));
     return (
       <div className="app-container flex flex-col min-h-screen" style={{ background: '#f8fafc' }}>
-        <BackBtn onBack={() => setScreen('calendar')} label="내 신청 내역" />
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-3.5 flex items-center gap-3">
+          <button onClick={() => setScreen('calendar')} className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#f1f5f9' }}>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#374151" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <span className="font-bold text-base flex-1" style={{ color: '#0f172a' }}>내 신청 내역</span>
+          <button
+            onClick={() => setScreen('penalties')}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl flex-shrink-0"
+            style={{ background: userPenalties.length > 0 ? '#fee2e2' : '#f1f5f9', color: userPenalties.length > 0 ? '#dc2626' : '#64748b' }}
+          >
+            제재내역{userPenalties.length > 0 ? ` ${userPenalties.length}` : ''}
+          </button>
+        </div>
         <div className="flex-1 overflow-y-auto p-4">
           {sorted.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64" style={{ color: '#94a3b8' }}>
@@ -793,6 +982,13 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
           </svg>
         </button>
         <span className="font-bold text-base flex-1" style={{ color: '#0f172a' }}>스포츠 시설 대관</span>
+        <button
+          onClick={() => setScreen('penalties')}
+          className="text-xs font-bold px-3 py-1.5 rounded-xl relative flex-shrink-0"
+          style={{ background: userPenalties.length > 0 ? '#fee2e2' : '#f1f5f9', color: userPenalties.length > 0 ? '#dc2626' : '#64748b' }}
+        >
+          제재{userPenalties.length > 0 ? ` ${userPenalties.length}` : ''}
+        </button>
         <button
           onClick={() => setScreen('myapps')}
           className="text-xs font-bold px-3 py-1.5 rounded-xl"

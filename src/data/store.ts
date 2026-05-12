@@ -1,7 +1,7 @@
 import { MOCK_REPORTS } from './mockData';
 import { MOCK_FACILITY_APPLICATIONS } from './facilityData';
 import { MOCK_SPORTS_APPLICATIONS } from './sportsData';
-import type { IssueReport, Announcement, FacilityApplication, SportsApplication } from './types';
+import type { IssueReport, Announcement, FacilityApplication, SportsApplication, Penalty } from './types';
 
 const KEY = 'suwon_reports';
 
@@ -119,4 +119,64 @@ export function updateSportsApplication(id: string, updates: Partial<SportsAppli
   saveSportsApplications(
     loadSportsApplications().map(a => a.id === id ? { ...a, ...updates } : a)
   );
+}
+
+// ── Penalties ────────────────────────────────────────────────────
+const PENALTY_KEY = 'suwon_penalties';
+
+export function loadPenalties(): Penalty[] {
+  try {
+    const raw = localStorage.getItem(PENALTY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function savePenalties(list: Penalty[]): void {
+  localStorage.setItem(PENALTY_KEY, JSON.stringify(list));
+  window.dispatchEvent(new StorageEvent('storage', { key: PENALTY_KEY }));
+}
+
+export function addPenalty(p: Penalty): void {
+  savePenalties([p, ...loadPenalties()]);
+}
+
+export function getUserPenalties(userId: string): Penalty[] {
+  return loadPenalties().filter(p => p.userId === userId);
+}
+
+export function getUserPenaltyCount(userId: string): number {
+  return getUserPenalties(userId).length;
+}
+
+// ── Suspensions ──────────────────────────────────────────────────
+const SUSPENSION_KEY = 'suwon_suspensions';
+
+type SuspensionMap = Record<string, { suspended: boolean; by?: string; at?: string }>;
+
+function loadSuspensionsRaw(): SuspensionMap {
+  try {
+    const raw = localStorage.getItem(SUSPENSION_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveSuspensions(data: SuspensionMap): void {
+  localStorage.setItem(SUSPENSION_KEY, JSON.stringify(data));
+  window.dispatchEvent(new StorageEvent('storage', { key: SUSPENSION_KEY }));
+}
+
+export function isUserSuspended(userId: string): boolean {
+  return loadSuspensionsRaw()[userId]?.suspended ?? false;
+}
+
+export function suspendUser(userId: string, by: string): void {
+  const data = loadSuspensionsRaw();
+  data[userId] = { suspended: true, by, at: new Date().toISOString() };
+  saveSuspensions(data);
+}
+
+export function unsuspendUser(userId: string): void {
+  const data = loadSuspensionsRaw();
+  delete data[userId];
+  saveSuspensions(data);
 }

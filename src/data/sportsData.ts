@@ -6,6 +6,16 @@ export const SPORTS_FACILITIES = [
   { id: 'tennis'      as const, name: '테니스장',         emoji: '🎾', color: '#0f9d58', bg: '#f0fdf4' },
 ];
 
+export const FACILITY_MIN_PARTICIPANTS: Record<string, number> = {
+  'futsal-main': 6,
+  'futsal-law':  6,
+  'tennis':      2,
+};
+
+export const VALID_USER_IDS = new Set([
+  'sw2024001', 'sw2024002', 'sw2024003', 'sw2024004', 'sw2024005',
+]);
+
 export const MOCK_SPORTS_APPLICATIONS: SportsApplication[] = [
   {
     id: 'SA-001',

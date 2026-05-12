@@ -129,4 +129,20 @@ export interface SportsApplication {
   signatureDataUrl?: string;
   returnPhotoUrl?: string;
   returnRequestedAt?: string;
+  participantIds?: string[];
+}
+
+// ── Penalty & Suspension ──────────────────────────────────────────
+export type PenaltyReason = '예약 후 미이용' | '시설 훼손' | '시설 불결 사용' | '규정 위반' | '기타';
+
+export interface Penalty {
+  id: string;
+  userId: string;
+  reason: PenaltyReason;
+  detail: string;
+  applicationId: string;
+  facilityName: string;
+  rentalDate: string;
+  issuedBy: string;
+  issuedAt: string;
 }
