@@ -9,8 +9,8 @@ export default function LandingPage() {
       icon: '📱',
       title: '사용자',
       subtitle: 'USER',
-      description: '시설 문제를 사진과 위치와 함께 신고하고 처리 현황을 실시간으로 확인하세요.',
-      features: ['사진으로 간편 신고', '건물 · 위치 선택', '처리 현황 추적', '신고 이력 조회'],
+      description: '시설 파손·전기·수도 등 이상을 신고하고, 체육시설 대관도 한 곳에서 신청하세요.',
+      features: ['시설 이상 신고', '체육시설 대관 신청', '처리 현황 추적', '대관 일정 확인'],
       color: '#1a56db',
       bg: '#eff6ff',
       border: '#bfdbfe',
@@ -20,8 +20,8 @@ export default function LandingPage() {
       icon: '🛠',
       title: '관리자',
       subtitle: 'ADMIN',
-      description: '담당 구역 신고를 접수하고 처리 상태를 관리하며 신고자에게 답변하세요.',
-      features: ['구역 신고 실시간 수신', '상태 업데이트 처리', '신고자 답변 기능', '처리 현황 대시보드'],
+      description: '구역별 시설 신고를 접수·처리하고, 체육시설 대관 신청을 승인·관리하세요.',
+      features: ['시설 신고 실시간 접수', '대관 신청 승인 처리', '반납 확인 관리', '이용자 제재 관리'],
       color: '#0f9d58',
       bg: '#f0fdf4',
       border: '#bbf7d0',
@@ -56,9 +56,9 @@ export default function LandingPage() {
           style={{ background: 'linear-gradient(135deg, #1a56db, #003670)' }}
         >
           <div className="text-white/70 text-xs font-semibold tracking-widest uppercase mb-1">Campus Facility Management</div>
-          <h1 className="text-white text-xl font-extrabold leading-tight mb-2">교내 시설 이상<br />신고 시스템</h1>
+          <h1 className="text-white text-xl font-extrabold leading-tight mb-2">교내 시설 통합<br />관리 시스템</h1>
           <p className="text-blue-200 text-sm leading-relaxed">
-            시설 파손·전기·수도 등의 문제를 신고하면 담당 관리팀이 즉시 처리합니다.
+            시설 이상 신고부터 체육시설 대관까지, 교내 시설 서비스를 한 곳에서 이용하세요.
           </p>
         </div>
 
