@@ -1,6 +1,7 @@
 import { MOCK_REPORTS } from './mockData';
 import { MOCK_FACILITY_APPLICATIONS } from './facilityData';
-import type { IssueReport, Announcement, FacilityApplication } from './types';
+import { MOCK_SPORTS_APPLICATIONS } from './sportsData';
+import type { IssueReport, Announcement, FacilityApplication, SportsApplication } from './types';
 
 const KEY = 'suwon_reports';
 
@@ -88,5 +89,34 @@ export function addFacilityApplication(app: FacilityApplication): void {
 export function updateFacilityApplication(id: string, updates: Partial<FacilityApplication>): void {
   saveFacilityApplications(
     loadFacilityApplications().map(a => a.id === id ? { ...a, ...updates } : a)
+  );
+}
+
+// ── Sports Applications ──────────────────────────────────────────
+const SA_KEY = 'suwon_sports_apps';
+
+export function loadSportsApplications(): SportsApplication[] {
+  try {
+    const raw = localStorage.getItem(SA_KEY);
+    if (raw) return JSON.parse(raw);
+    localStorage.setItem(SA_KEY, JSON.stringify(MOCK_SPORTS_APPLICATIONS));
+    return MOCK_SPORTS_APPLICATIONS;
+  } catch {
+    return MOCK_SPORTS_APPLICATIONS;
+  }
+}
+
+function saveSportsApplications(apps: SportsApplication[]): void {
+  localStorage.setItem(SA_KEY, JSON.stringify(apps));
+  window.dispatchEvent(new StorageEvent('storage', { key: SA_KEY }));
+}
+
+export function addSportsApplication(app: SportsApplication): void {
+  saveSportsApplications([app, ...loadSportsApplications()]);
+}
+
+export function updateSportsApplication(id: string, updates: Partial<SportsApplication>): void {
+  saveSportsApplications(
+    loadSportsApplications().map(a => a.id === id ? { ...a, ...updates } : a)
   );
 }

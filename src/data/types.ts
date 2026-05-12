@@ -102,3 +102,29 @@ export interface FacilityApplication {
   rejectReason?: string;
   notes?: string;
 }
+
+// ── Sports Facility Rental ───────────────────────────────────────
+export type SportsFacilityId = 'futsal-main' | 'futsal-law' | 'tennis';
+export type SportsAppStatus = '대기' | '승인' | '반려';
+
+export interface SportsApplication {
+  id: string;
+  facilityId: SportsFacilityId;
+  facilityName: string;
+  applicationDate: string;   // 신청일자 YYYY-MM-DD
+  applicantId: string;
+  applicantName: string;
+  applicantPhone: string;    // XXX-XXXX-XXXX
+  rentalDate: string;        // 대관신청일 YYYY-MM-DD
+  rentalStartTime: string;   // HH:MM
+  rentalEndTime: string;     // HH:MM
+  eventName: string;
+  reason: string;
+  department: string;
+  participantCount: number;
+  participantNotes: string;
+  status: SportsAppStatus;
+  appliedAt: string;
+  updatedAt: string;
+  signatureDataUrl?: string;
+}
