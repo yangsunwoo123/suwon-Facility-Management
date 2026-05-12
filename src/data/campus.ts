@@ -24,7 +24,7 @@ export const BUILDINGS: Building[] = [
   { id: 'design',     name: '디자인엔아트대학',       nameEn: 'Design & Art College',           zone: 'D', x: 73, y: 34 },
   { id: 'global',     name: '글로벌인재대학',         nameEn: 'Global Talent College',          zone: 'E', x: 83, y: 30 },
   { id: 'main',       name: '대학본부',              nameEn: 'Main Administration',            zone: 'F', x: 74, y: 24 },
-  { id: 'student',    name: '학생회관',              nameEn: 'Student Center',                 zone: 'C', x: 44, y: 47 },
+  { id: 'student',    name: '학생회관',              nameEn: 'Student Center',                 zone: 'C', x: 43, y: 50 },
   { id: 'gym',        name: '체육관',                nameEn: 'Gymnasium',                      zone: 'C', x: 25, y: 48 },
   { id: 'library',    name: '중앙도서관',            nameEn: 'Central Library',                zone: 'C', x: 65, y: 47 },
   { id: 'lifecare',   name: '라이프케어사이언스대학', nameEn: 'Life Care Science College',      zone: 'E', x: 78, y: 53 },

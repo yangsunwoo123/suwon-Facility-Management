@@ -7,8 +7,8 @@ export default function LandingPage() {
     {
       path: '/user',
       icon: '📱',
-      title: '사용자 앱',
-      subtitle: 'USER APP',
+      title: '사용자',
+      subtitle: 'USER',
       description: '시설 문제를 사진과 위치와 함께 신고하고 처리 현황을 실시간으로 확인하세요.',
       features: ['사진으로 간편 신고', '건물 · 위치 선택', '처리 현황 추적', '신고 이력 조회'],
       color: '#1a56db',
@@ -18,8 +18,8 @@ export default function LandingPage() {
     {
       path: '/admin',
       icon: '🛠',
-      title: '관리자 앱',
-      subtitle: 'ADMIN APP',
+      title: '관리자',
+      subtitle: 'ADMIN',
       description: '담당 구역 신고를 접수하고 처리 상태를 관리하며 신고자에게 답변하세요.',
       features: ['구역 신고 실시간 수신', '상태 업데이트 처리', '신고자 답변 기능', '처리 현황 대시보드'],
       color: '#0f9d58',

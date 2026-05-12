@@ -750,32 +750,28 @@ export default function UserApp() {
                     >
                       <span className="relative inline-flex items-center justify-center">
                         {mapZoneFilter === 'ALL' ? (
-                          /* ALL 뷰: 점 + 신고 배지만 표시 */
+                          /* ALL 뷰: 신고 있으면 숫자 포함 단일 빨간 원, 없으면 구역 색 점 */
                           <>
                             {hasReports && (
                               <span
                                 className="absolute rounded-full animate-ping"
-                                style={{ width: 12, height: 12, background: '#ef4444', opacity: 0.4 }}
+                                style={{ width: 20, height: 20, background: '#ef4444', opacity: 0.35 }}
                               />
                             )}
                             <span
-                              className="relative rounded-full flex items-center justify-center"
+                              className="relative rounded-full flex items-center justify-center font-extrabold text-white"
                               style={{
-                                width: hasReports ? 10 : 8,
-                                height: hasReports ? 10 : 8,
+                                width: hasReports ? 18 : 8,
+                                height: hasReports ? 18 : 8,
                                 background: hasReports ? '#ef4444' : zone.color,
                                 border: '1.5px solid white',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                                fontSize: 8,
+                                lineHeight: 1,
                               }}
-                            />
-                            {hasReports && (
-                              <span
-                                className="absolute -top-2 -right-2 inline-flex items-center justify-center rounded-full text-white font-extrabold"
-                                style={{ width: 13, height: 13, background: '#ef4444', fontSize: 7, border: '1.5px solid white' }}
-                              >
-                                {active.length}
-                              </span>
-                            )}
+                            >
+                              {hasReports ? active.length : ''}
+                            </span>
                           </>
                         ) : (
                           /* 구역 필터 뷰: 풀 라벨 표시 */
