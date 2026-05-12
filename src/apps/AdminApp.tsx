@@ -418,7 +418,7 @@ export default function AdminApp() {
             <div className="text-lg font-extrabold" style={{ color: '#0f172a' }}>시설 대관팀</div>
           </div>
           <button
-            onClick={() => { setScreen('login'); setAdminName(''); setSportsApps([]); setAdminType('maintenance'); }}
+            onClick={() => { localStorage.removeItem('portal_autologin_admin'); setScreen('login'); setAdminName(''); setSportsApps([]); setAdminType('maintenance'); }}
             className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{ background: '#f1f5f9' }}
             title="로그아웃"
@@ -780,7 +780,7 @@ export default function AdminApp() {
             )}
           </button>
           <button
-            onClick={() => { setScreen('login'); setAdminName(''); setReports([]); setAdminType('maintenance'); }}
+            onClick={() => { localStorage.removeItem('portal_autologin_admin'); setScreen('login'); setAdminName(''); setReports([]); setAdminType('maintenance'); }}
             className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{ background: '#f1f5f9' }}
             title="로그아웃"

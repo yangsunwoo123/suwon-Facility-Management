@@ -481,7 +481,7 @@ export default function DevApp() {
               <span className="text-green-400 text-xs font-mono font-bold">ONLINE</span>
             </div>
             <button
-              onClick={() => setScreen('login')}
+              onClick={() => { localStorage.removeItem('portal_autologin_dev'); setScreen('login'); }}
               className="w-8 h-8 rounded-xl flex items-center justify-center"
               style={{ background: '#1e293b' }}
               title="로그아웃"
