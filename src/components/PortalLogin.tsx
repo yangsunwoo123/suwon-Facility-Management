@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface Props {
   appType: 'user' | 'admin' | 'dev';
@@ -14,21 +14,46 @@ const APP_LABELS = {
 };
 
 const SAVE_ID_KEY = (appType: string) => `portal_saved_id_${appType}`;
+const AUTO_LOGIN_KEY = (appType: string) => `portal_autologin_${appType}`;
 
 export default function PortalLogin({ appType, onLogin, onLogoTap, forgotPasswordUrl }: Props) {
   const [userId, setUserId]     = useState('');
   const [password, setPassword] = useState('');
   const [saveId, setSaveId]     = useState(false);
+  const [autoLogin, setAutoLogin] = useState(false);
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const [showPw, setShowPw]     = useState(false);
+  const autoLoginTriedRef = useRef(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_ID_KEY(appType));
     if (saved) { setUserId(saved); setSaveId(true); }
+    if (!autoLoginTriedRef.current) {
+      autoLoginTriedRef.current = true;
+      const raw = localStorage.getItem(AUTO_LOGIN_KEY(appType));
+      if (raw) {
+        try {
+          const { id, pw } = JSON.parse(raw);
+          setAutoLogin(true);
+          const ok = onLogin(id, pw);
+          if (!ok) localStorage.removeItem(AUTO_LOGIN_KEY(appType));
+        } catch {
+          localStorage.removeItem(AUTO_LOGIN_KEY(appType));
+        }
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appType]);
 
   const label = APP_LABELS[appType];
+
+  const toggleAutoLogin = () => {
+    setAutoLogin(v => {
+      if (!v) setSaveId(true);
+      return !v;
+    });
+  };
 
   const handleLogin = async () => {
     if (!userId.trim() || !password.trim()) {
@@ -40,8 +65,10 @@ export default function PortalLogin({ appType, onLogin, onLogoTap, forgotPasswor
     await new Promise(r => setTimeout(r, 600));
     const ok = onLogin(userId.trim(), password.trim());
     if (ok) {
-      if (saveId) localStorage.setItem(SAVE_ID_KEY(appType), userId.trim());
+      if (saveId || autoLogin) localStorage.setItem(SAVE_ID_KEY(appType), userId.trim());
       else localStorage.removeItem(SAVE_ID_KEY(appType));
+      if (autoLogin) localStorage.setItem(AUTO_LOGIN_KEY(appType), JSON.stringify({ id: userId.trim(), pw: password.trim() }));
+      else localStorage.removeItem(AUTO_LOGIN_KEY(appType));
     } else {
       setError('아이디 또는 비밀번호가 올바르지 않습니다.');
     }
@@ -170,25 +197,45 @@ export default function PortalLogin({ appType, onLogin, onLogoTap, forgotPasswor
               </div>
             </div>
 
-            {/* Save ID */}
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <div
-                onClick={() => setSaveId(v => !v)}
-                className="rounded border-2 flex items-center justify-center transition-all flex-shrink-0"
-                style={{
-                  width: 18, height: 18,
-                  borderColor: saveId ? label.color : '#d1d5db',
-                  background: saveId ? label.color : '#fff',
-                }}
-              >
-                {saveId && (
-                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </div>
-              <span className="text-sm text-gray-600">아이디 저장</span>
-            </label>
+            {/* Save ID & Auto-login */}
+            <div className="flex items-center gap-5">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <div
+                  onClick={() => setSaveId(v => !v)}
+                  className="rounded border-2 flex items-center justify-center transition-all flex-shrink-0"
+                  style={{
+                    width: 18, height: 18,
+                    borderColor: saveId ? label.color : '#d1d5db',
+                    background: saveId ? label.color : '#fff',
+                  }}
+                >
+                  {saveId && (
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                      <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+                <span className="text-sm text-gray-600">아이디 저장</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <div
+                  onClick={toggleAutoLogin}
+                  className="rounded border-2 flex items-center justify-center transition-all flex-shrink-0"
+                  style={{
+                    width: 18, height: 18,
+                    borderColor: autoLogin ? label.color : '#d1d5db',
+                    background: autoLogin ? label.color : '#fff',
+                  }}
+                >
+                  {autoLogin && (
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                      <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+                <span className="text-sm text-gray-600">자동 로그인</span>
+              </label>
+            </div>
 
             {/* Error */}
             {error && (

@@ -3,10 +3,10 @@ import PortalLogin from '../components/PortalLogin';
 import { MOCK_LOGS } from '../data/mockData';
 import { MOCK_REPORTS } from '../data/mockData';
 import { ZONES, CATEGORIES, STATUS_CONFIG, PRIORITY_COLORS } from '../data/campus';
-import { loadAnnouncements, addAnnouncement } from '../data/store';
-import type { LogEntry, Announcement } from '../data/types';
+import { loadAnnouncements, addAnnouncement, loadSportsApplications } from '../data/store';
+import type { LogEntry, Announcement, SportsApplication } from '../data/types';
 
-type Screen = 'login' | 'dashboard' | 'logs' | 'reports' | 'users' | 'zones';
+type Screen = 'login' | 'dashboard' | 'logs' | 'reports' | 'users' | 'zones' | 'rentals';
 
 const PRIMARY = '#7c3aed';
 
@@ -24,6 +24,14 @@ const logLevelColor: Record<string, { text: string; bg: string }> = {
   WARN:  { text: '#d97706', bg: '#fffbeb' },
   ERROR: { text: '#dc2626', bg: '#fef2f2' },
   DEBUG: { text: '#6b7280', bg: '#f3f4f6' },
+};
+
+const RENTAL_STATUS_CFG: Record<string, { color: string; bg: string }> = {
+  '대기':    { color: '#d97706', bg: '#fef3c7' },
+  '승인':    { color: '#059669', bg: '#d1fae5' },
+  '반려':    { color: '#dc2626', bg: '#fee2e2' },
+  '반납대기': { color: '#7c3aed', bg: '#f5f3ff' },
+  '반납완료': { color: '#6b7280', bg: '#f1f5f9' },
 };
 
 function BackBtn({ onBack, label, dark = false }: { onBack: () => void; label: string; dark?: boolean }) {
@@ -60,6 +68,8 @@ export default function DevApp() {
   const [annTitle, setAnnTitle]   = useState('');
   const [annContent, setAnnContent] = useState('');
   const [showAnnForm, setShowAnnForm] = useState(false);
+  const [sportsApps, setSportsApps] = useState<SportsApplication[]>(() => loadSportsApplications());
+  const [rentalFilter, setRentalFilter] = useState('ALL');
 
   const postAnnouncement = () => {
     if (!annTitle.trim() || !annContent.trim()) return;
@@ -78,7 +88,10 @@ export default function DevApp() {
   };
 
   useEffect(() => {
-    const handler = () => setAnnouncements(loadAnnouncements());
+    const handler = () => {
+      setAnnouncements(loadAnnouncements());
+      setSportsApps(loadSportsApplications());
+    };
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
   }, []);
@@ -101,7 +114,11 @@ export default function DevApp() {
           'Cache invalidated for zone-C reports',
           'File upload completed: 2.3MB',
           'Admin zone-A logged in',
-        ][Math.floor(Math.random() * 8)],
+          'Sports rental application submitted: 풋살장(대운동장)',
+          'Rental approved: tennis court reservation',
+          'Return photo uploaded by applicant',
+          'Sports return confirmed by 시설 대관팀',
+        ][Math.floor(Math.random() * 12)],
       };
       setLogs(prev => [newLog, ...prev.slice(0, 99)]);
     }, 2000);
@@ -364,12 +381,83 @@ export default function DevApp() {
     );
   }
 
+  // ── Rentals ─────────────────────────────────────────────────────
+  if (screen === 'rentals') {
+    const rentalStats = [
+      { label: '전체',    count: sportsApps.length,                                       color: '#64748b', key: 'ALL' },
+      { label: '대기',    count: sportsApps.filter(a => a.status === '대기').length,      color: '#d97706', key: '대기' },
+      { label: '승인',    count: sportsApps.filter(a => a.status === '승인').length,      color: '#059669', key: '승인' },
+      { label: '반납대기', count: sportsApps.filter(a => a.status === '반납대기').length,  color: '#7c3aed', key: '반납대기' },
+      { label: '반납완료', count: sportsApps.filter(a => a.status === '반납완료').length,  color: '#6b7280', key: '반납완료' },
+      { label: '반려',    count: sportsApps.filter(a => a.status === '반려').length,      color: '#dc2626', key: '반려' },
+    ];
+    const filtered = rentalFilter === 'ALL' ? sportsApps : sportsApps.filter(a => a.status === rentalFilter);
+
+    return (
+      <div className="app-container flex flex-col min-h-screen" style={{ background: '#f8fafc' }}>
+        <BackBtn onBack={() => setScreen('dashboard')} label="시설 대관 현황" />
+
+        {/* Stats grid */}
+        <div className="px-4 pt-4 grid grid-cols-3 gap-2">
+          {rentalStats.map(s => (
+            <button
+              key={s.key}
+              onClick={() => setRentalFilter(s.key)}
+              className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm text-center transition active:scale-95"
+              style={rentalFilter === s.key ? { borderColor: s.color, boxShadow: `0 0 0 2px ${s.color}30` } : {}}
+            >
+              <div className="text-xl font-bold font-mono" style={{ color: s.color }}>{s.count}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Application list */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 mt-2">
+          {filtered.length === 0 ? (
+            <div className="text-center py-10 text-sm text-gray-400">신청 내역이 없습니다.</div>
+          ) : (
+            filtered.map(app => {
+              const sc = RENTAL_STATUS_CFG[app.status] ?? { color: '#6b7280', bg: '#f1f5f9' };
+              return (
+                <div key={app.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <div className="font-bold text-gray-800 text-sm">{app.facilityName}</div>
+                      <div className="text-xs text-gray-400 font-mono mt-0.5">{app.id}</div>
+                    </div>
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0" style={{ background: sc.bg, color: sc.color }}>
+                      {app.status}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 text-xs text-gray-500 mt-1">
+                    <div>신청자: <span className="text-gray-700 font-medium">{app.applicantName}</span></div>
+                    <div>소속: <span className="text-gray-700 font-medium">{app.department}</span></div>
+                    <div className="col-span-2 mt-1">대관일: <span className="text-gray-700">{app.rentalDate} {app.rentalStartTime}~{app.rentalEndTime}</span></div>
+                    <div className="col-span-2">행사명: <span className="text-gray-700">{app.eventName}</span></div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-gray-400 border-t border-gray-50 pt-2">
+                    <span>신청: {new Date(app.appliedAt).toLocaleDateString('ko-KR')}</span>
+                    {app.returnRequestedAt && (
+                      <span style={{ color: '#7c3aed' }}>반납신청: {new Date(app.returnRequestedAt).toLocaleDateString('ko-KR')}</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // ── Dashboard ───────────────────────────────────────────────────
   const errorCount = logs.filter(l => l.level === 'ERROR').length;
   const warnCount  = logs.filter(l => l.level === 'WARN').length;
   const totalReports     = MOCK_REPORTS.length;
   const completedReports = MOCK_REPORTS.filter(r => r.status === '완료').length;
   const onlineAdmins     = ADMIN_USERS.filter(a => a.status === '온라인').length;
+  const pendingRentals   = sportsApps.filter(a => a.status === '대기').length;
 
   return (
     <div className="app-container flex flex-col min-h-screen" style={{ background: '#0f172a' }}>
@@ -410,12 +498,14 @@ export default function DevApp() {
 
       {/* System stats */}
       <div className="px-4 mt-4">
-        <div className="rounded-2xl p-4 grid grid-cols-2 gap-3" style={{ background: '#1e293b', border: '1px solid #2d3748' }}>
+        <div className="rounded-2xl p-4 grid grid-cols-3 gap-3" style={{ background: '#1e293b', border: '1px solid #2d3748' }}>
           {[
-            { label: 'Total Reports', value: String(totalReports), sub: '전체 신고',    color: PRIMARY },
-            { label: 'Resolved',      value: String(completedReports), sub: '처리 완료', color: '#10b981' },
-            { label: 'Errors (24h)',  value: String(errorCount), sub: '에러 로그',      color: errorCount > 5 ? '#ef4444' : '#f59e0b' },
-            { label: 'Admins Online', value: `${onlineAdmins}/6`, sub: '온라인 관리자', color: '#3b82f6' },
+            { label: 'Total Reports', value: String(totalReports),     sub: '전체 신고',    color: PRIMARY },
+            { label: 'Resolved',      value: String(completedReports), sub: '처리 완료',    color: '#10b981' },
+            { label: 'Errors (24h)',  value: String(errorCount),       sub: '에러 로그',    color: errorCount > 5 ? '#ef4444' : '#f59e0b' },
+            { label: 'Admins Online', value: `${onlineAdmins}/6`,      sub: '온라인 관리자', color: '#3b82f6' },
+            { label: 'Rentals (대기)', value: String(pendingRentals),   sub: '대관 승인대기', color: '#7c3aed' },
+            { label: 'Total Rentals', value: String(sportsApps.length), sub: '전체 대관신청', color: '#64748b' },
           ].map(s => (
             <div key={s.label} className="rounded-xl p-3" style={{ background: '#0f172a' }}>
               <div className="text-xl font-bold font-mono" style={{ color: s.color }}>{s.value}</div>
@@ -453,10 +543,10 @@ export default function DevApp() {
       {/* Quick actions */}
       <div className="px-4 mt-4 grid grid-cols-2 gap-3">
         {[
-          { screen: 'logs'    as Screen, icon: '📊', title: 'System Logs',  sub: '실시간 로그',   badge: errorCount > 0 ? String(errorCount) : null },
-          { screen: 'reports' as Screen, icon: '📋', title: 'All Reports',  sub: '전체 신고 현황', badge: null },
-          { screen: 'zones'   as Screen, icon: '🗺️', title: 'Zone Manager', sub: '구역 관리',     badge: null },
-          { screen: 'users'   as Screen, icon: '👥', title: 'Users',        sub: '사용자 관리',   badge: null },
+          { screen: 'logs'    as Screen, icon: '📊', title: 'System Logs',  sub: '실시간 로그',   badge: errorCount > 0 ? String(errorCount) : null, badgeColor: 'bg-red-500' },
+          { screen: 'reports' as Screen, icon: '📋', title: 'All Reports',  sub: '전체 신고 현황', badge: null, badgeColor: '' },
+          { screen: 'zones'   as Screen, icon: '🗺️', title: 'Zone Manager', sub: '구역 관리',     badge: null, badgeColor: '' },
+          { screen: 'users'   as Screen, icon: '👥', title: 'Users',        sub: '사용자 관리',   badge: null, badgeColor: '' },
         ].map(item => (
           <button
             key={item.screen}
@@ -465,7 +555,7 @@ export default function DevApp() {
             style={{ background: '#1e293b', border: '1px solid #2d3748' }}
           >
             {item.badge && (
-              <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold font-mono">
+              <div className={`absolute top-3 right-3 w-5 h-5 rounded-full ${item.badgeColor} text-white text-xs flex items-center justify-center font-bold font-mono`}>
                 {item.badge}
               </div>
             )}
@@ -474,6 +564,25 @@ export default function DevApp() {
             <div className="text-slate-500 text-xs font-mono mt-0.5">{item.sub}</div>
           </button>
         ))}
+      </div>
+      {/* Rentals card — full width */}
+      <div className="px-4 mt-3">
+        <button
+          onClick={() => setScreen('rentals')}
+          className="w-full rounded-2xl p-4 text-left transition active:scale-95 relative flex items-center gap-4"
+          style={{ background: '#1e293b', border: '1px solid #2d3748' }}
+        >
+          {pendingRentals > 0 && (
+            <div className="absolute top-3 right-3 w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-bold font-mono" style={{ background: '#7c3aed' }}>
+              {pendingRentals}
+            </div>
+          )}
+          <div className="text-2xl">🏃</div>
+          <div>
+            <div className="text-slate-200 font-bold text-sm">Rentals</div>
+            <div className="text-slate-500 text-xs font-mono">시설 대관 현황 · 전체 {sportsApps.length}건</div>
+          </div>
+        </button>
       </div>
 
       {/* Recent logs preview */}
