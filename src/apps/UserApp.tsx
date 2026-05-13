@@ -701,6 +701,27 @@ export default function UserApp() {
         </button>
       </div>
 
+      {/* Library system */}
+      <div className="px-4 pt-3">
+        <button
+          onClick={() => window.open('https://lib.suwon.ac.kr/#/', '_blank')}
+          className="w-full rounded-2xl p-4 text-left relative overflow-hidden active:scale-98 transition border"
+          style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #0c4a6e 100%)', borderColor: '#0369a1' }}
+        >
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-5xl opacity-20">📚</div>
+          <div className="text-xs font-extrabold uppercase tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>도서관 시스템</div>
+          <div className="text-sm font-bold text-white">컨퍼런스 룸 · 열람실 예약</div>
+          <div className="flex items-center gap-2 mt-2">
+            {['🏛️ 미래혁신관', '📖 중앙도서관'].map(t => (
+              <span key={t} className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)' }}>
+                {t}
+              </span>
+            ))}
+            <span className="ml-auto text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>외부 링크 →</span>
+          </div>
+        </button>
+      </div>
+
       {/* Campus map */}
       <div className="px-4 pt-5">
         <div className="flex items-center justify-between mb-3">
