@@ -9,34 +9,34 @@ export const ZONES: Zone[] = [
   { id: 'F', name: '본부·행정 구역', color: '#607d8b', buildings: ['main','dorm','rotc'], adminName: '본부 관리팀' },
 ];
 
-// x, y = 지도 이미지(1200×900) 내 텍스트 레이블 위치 (%)
+// x, y = 지도 이미지 내 건물 중심 위치 (%) — 새 캠퍼스 맵 기준 (번호 01~26)
 export const BUILDINGS: Building[] = [
-  { id: 'human',      name: '인문사회융합대학',     nameEn: 'Humanities & Social College',    zone: 'E', x: 7,  y: 46 },
-  { id: 'future',     name: '미래혁신관',            nameEn: 'Future Innovation Bldg',         zone: 'B', x: 21, y: 31 },
-  { id: 'inno',       name: '혁신공과대학',           nameEn: 'Innovation Engineering College', zone: 'A', x: 30, y: 37 },
-  { id: 'eng2',       name: '제2공학관',             nameEn: 'Engineering Bldg 2',             zone: 'A', x: 36, y: 40 },
-  { id: 'eng1',       name: '제1공학관',             nameEn: 'Engineering Bldg 1',             zone: 'A', x: 36, y: 28 },
-  { id: 'research',   name: '고운첨단과학기술연구원', nameEn: 'Advanced Science Institute',      zone: 'B', x: 42, y: 14 },
-  { id: 'eng3',       name: '제3공학관',             nameEn: 'Engineering Bldg 3',             zone: 'A', x: 47, y: 24 },
-  { id: 'ace',        name: 'ACE교육관',             nameEn: 'ACE Education Bldg',             zone: 'A', x: 45, y: 33 },
-  { id: 'eng4',       name: '제4공학관',             nameEn: 'Engineering Bldg 4',             zone: 'A', x: 56, y: 21 },
-  { id: 'formative',  name: '조형관',                nameEn: 'Formative Arts Bldg',            zone: 'D', x: 68, y: 28 },
-  { id: 'design',     name: '디자인엔아트대학',       nameEn: 'Design & Art College',           zone: 'D', x: 73, y: 34 },
-  { id: 'global',     name: '글로벌인재대학',         nameEn: 'Global Talent College',          zone: 'E', x: 83, y: 30 },
-  { id: 'main',       name: '대학본부',              nameEn: 'Main Administration',            zone: 'F', x: 74, y: 24 },
-  { id: 'student',    name: '학생회관',              nameEn: 'Student Center',                 zone: 'C', x: 43, y: 50 },
-  { id: 'gym',        name: '체육관',                nameEn: 'Gymnasium',                      zone: 'C', x: 25, y: 48 },
-  { id: 'library',    name: '중앙도서관',            nameEn: 'Central Library',                zone: 'C', x: 65, y: 47 },
-  { id: 'lifecare',   name: '라이프케어사이언스대학', nameEn: 'Life Care Science College',      zone: 'E', x: 78, y: 53 },
-  { id: 'social',     name: '사회관',                nameEn: 'Social Sciences Bldg',           zone: 'C', x: 54, y: 62 },
-  { id: 'swfusion',   name: '지능형SW융합대학',       nameEn: 'Intelligent SW College',         zone: 'E', x: 46, y: 59 },
-  { id: 'belcanto',   name: '벨칸토아트센터',         nameEn: 'Belcanto Art Center',            zone: 'D', x: 42, y: 71 },
-  { id: 'outdoor',    name: '야외음악당',             nameEn: 'Outdoor Amphitheater',           zone: 'D', x: 73, y: 62 },
-  { id: 'music',      name: '음악테크놀로지대학',     nameEn: 'Music Technology College',       zone: 'D', x: 77, y: 66 },
-  { id: 'culture',    name: '문화예술융합대학',       nameEn: 'Culture & Arts College',         zone: 'D', x: 75, y: 72 },
-  { id: 'dorm',       name: '기숙사',                nameEn: 'Dormitory',                      zone: 'F', x: 73, y: 77 },
-  { id: 'biz',        name: '경영공학대학',           nameEn: 'Business Engineering College',   zone: 'E', x: 66, y: 83 },
-  { id: 'rotc',       name: 'ROTC',                  nameEn: 'ROTC',                           zone: 'F', x: 87, y: 37 },
+  { id: 'human',     name: '인문사회융합대학',          nameEn: 'Humanities & Social College',    zone: 'E', x: 7,  y: 48 }, // 01
+  { id: 'future',    name: '미래혁신관',                nameEn: 'Future Innovation Bldg',         zone: 'B', x: 21, y: 29 }, // 02
+  { id: 'inno',      name: '혁신공과대학',              nameEn: 'Innovation Engineering College', zone: 'A', x: 31, y: 37 }, // 03
+  { id: 'research',  name: '고운첨단과학기술연구원',     nameEn: 'Advanced Science Institute',     zone: 'B', x: 40, y: 13 }, // 04
+  { id: 'eng1',      name: '제1공학관',                 nameEn: 'Engineering Bldg 1',             zone: 'A', x: 37, y: 21 }, // 05
+  { id: 'eng2',      name: '제2공학관',                 nameEn: 'Engineering Bldg 2 (Green Car)', zone: 'A', x: 38, y: 32 }, // 06
+  { id: 'eng3',      name: '제3공학관',                 nameEn: 'Engineering Bldg 3',             zone: 'A', x: 49, y: 21 }, // 07
+  { id: 'ace',       name: 'ACE교육관',                 nameEn: 'ACE Education Bldg',             zone: 'A', x: 50, y: 30 }, // 08
+  { id: 'eng4',      name: '제4공학관',                 nameEn: 'Engineering Bldg 4',             zone: 'A', x: 60, y: 18 }, // 09
+  { id: 'formative', name: '조형관',                    nameEn: 'Formative Arts Bldg',            zone: 'D', x: 71, y: 23 }, // 10
+  { id: 'design',    name: '디자인엔아트대학',           nameEn: 'Design & Art College',           zone: 'D', x: 75, y: 30 }, // 11
+  { id: 'global',    name: '글로벌인재대학',             nameEn: 'Global Talent College',          zone: 'E', x: 87, y: 27 }, // 12
+  { id: 'main',      name: '대학본부',                  nameEn: 'Main Administration',            zone: 'F', x: 77, y: 23 }, // 13
+  { id: 'student',   name: '학생회관',                  nameEn: 'Student Center',                 zone: 'C', x: 48, y: 47 }, // 14
+  { id: 'gym',       name: '체육관',                    nameEn: 'Gymnasium',                      zone: 'C', x: 28, y: 46 }, // 15
+  { id: 'library',   name: '중앙도서관',                nameEn: 'Central Library',                zone: 'C', x: 70, y: 44 }, // 16
+  { id: 'lifecare',  name: '라이프케어사이언스대학',     nameEn: 'Life Care Science College',      zone: 'E', x: 79, y: 52 }, // 17
+  { id: 'social',    name: '사회관',                    nameEn: 'Social Sciences Bldg',           zone: 'C', x: 57, y: 63 }, // 18
+  { id: 'swfusion',  name: '지능형SW융합대학',           nameEn: 'Intelligent SW College',         zone: 'E', x: 50, y: 60 }, // 19
+  { id: 'belcanto',  name: '벨칸토아트센터',             nameEn: 'Belcanto Art Center',            zone: 'D', x: 43, y: 71 }, // 20
+  { id: 'outdoor',   name: '야외음악당',                nameEn: 'Outdoor Amphitheater',           zone: 'D', x: 78, y: 62 }, // 21
+  { id: 'music',     name: '음악테크놀로지대학',         nameEn: 'Music Technology College',       zone: 'D', x: 81, y: 68 }, // 22
+  { id: 'culture',   name: '문화예술융합대학',           nameEn: 'Culture & Arts College',         zone: 'D', x: 80, y: 73 }, // 23
+  { id: 'dorm',      name: '기숙사',                    nameEn: 'Dormitory',                      zone: 'F', x: 80, y: 78 }, // 24
+  { id: 'biz',       name: '경영공학대학',               nameEn: 'Business Engineering College',   zone: 'E', x: 82, y: 84 }, // 25
+  { id: 'rotc',      name: 'ROTC',                      nameEn: 'ROTC',                           zone: 'F', x: 90, y: 36 }, // 26
 ];
 
 export const CATEGORIES = [
