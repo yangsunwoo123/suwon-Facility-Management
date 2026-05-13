@@ -115,6 +115,7 @@ export interface SportsApplication {
   applicantId: string;
   applicantName: string;
   applicantPhone: string;    // XXX-XXXX-XXXX
+  teamName: string;          // 단체명
   rentalDate: string;        // 대관신청일 YYYY-MM-DD
   rentalStartTime: string;   // HH:MM
   rentalEndTime: string;     // HH:MM

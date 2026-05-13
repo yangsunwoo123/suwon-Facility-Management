@@ -39,56 +39,67 @@ const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
 // ── PDF print ────────────────────────────────────────────────────
 function printPDF(app: SportsApplication, sig: string) {
-  const fac = SPORTS_FACILITIES.find(f => f.id === app.facilityId);
+  const facilityTitle = app.facilityName.includes('테니스') ? '테니스장 사용 승인서' : '풋살구장 사용 승인서';
   const win = window.open('', '_blank');
   if (!win) { alert('팝업이 차단되었습니다. 팝업 허용 후 다시 시도해주세요.'); return; }
   win.document.write(`<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>스포츠 시설 대관 신청서</title>
+<html><head><meta charset="UTF-8"><title>${facilityTitle}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;padding:20mm 18mm;color:#000;font-size:10pt}
-h1{text-align:center;font-size:18pt;font-weight:bold;margin-bottom:4mm}
-.sub{text-align:center;font-size:9pt;color:#555;margin-bottom:8mm}
-.notice{background:#fffbe6;border:1px solid #f59e0b;padding:3mm 5mm;font-size:8.5pt;margin-bottom:6mm;border-radius:3px}
+h1{text-align:center;font-size:18pt;font-weight:bold;margin:6mm 0 8mm}
+.approval-grid{float:right;border-collapse:collapse;margin-bottom:2mm}
+.approval-grid td{border:1px solid #555;width:18mm;height:10mm;text-align:center;font-size:8pt;vertical-align:middle}
+.approval-grid .top-row td{height:7mm;background:#f3f4f6;font-weight:bold}
+.clearfix::after{content:'';display:table;clear:both}
 table{width:100%;border-collapse:collapse;margin-bottom:8mm}
-th,td{border:1px solid #555;padding:3mm 4mm;vertical-align:top}
-th{background:#f3f4f6;font-weight:bold;width:32%;white-space:nowrap}
+th,td{border:1px solid #555;padding:3mm 4mm;vertical-align:middle}
+th{background:#f3f4f6;font-weight:bold;width:25%;white-space:nowrap}
 td{word-break:break-all}
-.notes-td{min-height:25mm;white-space:pre-wrap}
-.sign-row{margin-top:12mm;display:flex;justify-content:flex-end;align-items:flex-end;gap:8mm}
-.sign-box{text-align:center}
-.sign-box img{width:55mm;height:22mm;border:1px solid #999;display:block;object-fit:contain;background:#fff}
-.sign-label{font-size:9pt;margin-top:2mm}
-.logo{text-align:center;margin-bottom:6mm}
-.logo-title{font-size:14pt;font-weight:bold;color:#1a56db;letter-spacing:1px}
-.logo-sub{font-size:9pt;color:#666;margin-top:1mm}
+.notes-td{min-height:20mm;vertical-align:top;white-space:pre-wrap}
+.stamp-cell{text-align:center;color:#c00;font-size:22pt;font-weight:bold;border:2px solid #c00;width:18mm;height:14mm;vertical-align:middle}
+.approve-text{text-align:center;margin:8mm 0 6mm;font-size:11pt}
+.sign-row{display:flex;justify-content:space-between;align-items:flex-end;margin:8mm 0}
+.sign-left{font-size:11pt;font-weight:bold;letter-spacing:2px}
+.sign-right{text-align:right}
+.sign-right p{font-size:10pt;margin-bottom:2mm}
+.sign-box img{width:50mm;height:20mm;border:1px solid #999;display:block;object-fit:contain;background:#fff}
+.footnote{font-size:8.5pt;margin-top:6mm;color:#333}
+.footnote p{margin-bottom:1mm}
+.appnum{text-align:right;font-size:8.5pt;margin-top:4mm}
 .print-btn{display:block;margin:10mm auto 0;padding:6px 20px;background:#1a56db;color:#fff;border:none;border-radius:5px;font-size:10pt;cursor:pointer}
 @media print{.print-btn{display:none}body{padding:12mm}}
 </style></head><body>
-<div class="logo"><div class="logo-title">THE UNIVERSITY OF SUWON</div><div class="logo-sub">수원대학교</div></div>
-<h1>스포츠 시설 대관 신청서</h1>
-<div class="sub">신청번호: ${app.id}</div>
-<div class="notice">※ 1일 2시간 이상 신청할 수 없으며, 사용시간은 09:00 ~ 21:00 까지입니다.</div>
+<div class="clearfix">
+  <table class="approval-grid" style="float:right;margin-bottom:4mm">
+    <tr class="top-row"><td>결</td><td>담 당</td><td>과 장</td><td>총무처장</td></tr>
+    <tr><td>재</td><td></td><td></td><td></td></tr>
+  </table>
+  <h1>${facilityTitle}</h1>
+</div>
 <table>
-<tr><th>운동장 구분</th><td>${fac?.emoji ?? ''} ${app.facilityName}</td><th>신청일자</th><td>${app.applicationDate}</td></tr>
-<tr><th>신청자</th><td>${app.applicantName}</td><th>신청번호</th><td>${app.id}</td></tr>
-<tr><th>신청자 연락처</th><td colspan="3">${app.applicantPhone}</td></tr>
-<tr><th>대관 신청일</th><td colspan="3">${app.rentalDate}</td></tr>
-<tr><th>대관 신청시간</th><td colspan="3">${app.rentalStartTime} ~ ${app.rentalEndTime}</td></tr>
-<tr><th>행사명</th><td colspan="3">${app.eventName}</td></tr>
-<tr><th>신청사유</th><td colspan="3">${app.reason}</td></tr>
+<tr><th>단체명</th><td colspan="3">${app.teamName}</td></tr>
+<tr><th>일시</th><td colspan="3">${app.rentalDate}(${app.rentalStartTime}~${app.rentalEndTime})</td></tr>
+<tr><th>대여장소</th><td colspan="3">${app.facilityName}</td></tr>
+<tr><th>참가예정인원</th><td>${app.participantCount}명</td><th>신청자 사번/학번</th><td>${app.applicantId}</td></tr>
+<tr><th>신청자성명</th><td>${app.applicantName}</td><th>신청자 연락처</th><td>${app.applicantPhone}</td></tr>
 <tr><th>소속 학과/부서명</th><td colspan="3">${app.department}</td></tr>
-<tr><th>참가 인원수</th><td colspan="3">${app.participantCount}명</td></tr>
-<tr><th>참가자 명단 및 비고사항</th><td colspan="3" class="notes-td">${app.participantNotes.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td></tr>
+<tr><th>비고</th><td colspan="2" class="notes-td">${(app.participantNotes || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td><td class="stamp-cell">승인</td></tr>
 </table>
+<p class="approve-text">위와 같이 ${app.facilityName} 사용을 승인합니다.</p>
 <div class="sign-row">
-  <div class="sign-box">
-    <div class="sign-label">신청인: ${app.applicantName}</div>
-    <img src="${sig}" alt="서명"/>
-    <div class="sign-label">(서명 또는 날인)</div>
+  <div class="sign-left">수 원 대 학 교 총 장 귀 하</div>
+  <div class="sign-right">
+    <p>${app.applicationDate.replace(/-/g, '년 ').replace('-', '월 ')}일</p>
+    <p>신청인(대표자) &nbsp;&nbsp; ${app.applicantName} &nbsp; (인)</p>
+    <img src="${sig}" alt="서명" style="width:50mm;height:20mm;border:1px solid #999;object-fit:contain;background:#fff;margin-top:2mm"/>
   </div>
 </div>
-<div style="text-align:center;margin-top:10mm;font-size:8.5pt;color:#666">수원대학교 시설관리처 · 031-220-2000</div>
+<div class="footnote">
+  <p>※ 1. ${app.facilityName} 사용수칙 반드시 별첨할 것.</p>
+  <p>&nbsp;&nbsp;&nbsp;2. 연락처 반드시 기재할 것.</p>
+</div>
+<p class="appnum">신청번호: ${app.id}</p>
 <button class="print-btn" onclick="window.print()">출력 / PDF 저장</button>
 </body></html>`);
   win.document.close();
@@ -219,6 +230,7 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
 
   // Apply form fields
   const [fFacility, setFFacility]     = useState<SportsFacilityId | ''>('');
+  const [fTeamName, setFTeamName]     = useState('');
   const [fPhone, setFPhone]           = useState('');
   const [fRentalDate, setFRentalDate] = useState('');
   const [fStartTime, setFStartTime]   = useState('');
@@ -307,7 +319,7 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
       setFError('모든 참가자 아이디를 올바르게 입력해주세요.');
       return;
     }
-    if (!fFacility || !fPhone || !fRentalDate || !fStartTime || !fEndTime || !fEventName || !fReason || !fDept || !fCount) {
+    if (!fFacility || !fTeamName || !fPhone || !fRentalDate || !fStartTime || !fEndTime || !fEventName || !fReason || !fDept || !fCount) {
       setFError('모든 필수 항목을 입력해주세요.');
       return;
     }
@@ -334,6 +346,7 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
       applicantId: userName,
       applicantName: userName,
       applicantPhone: fPhone,
+      teamName: fTeamName,
       rentalDate: fRentalDate,
       rentalStartTime: fStartTime,
       rentalEndTime: fEndTime,
@@ -503,6 +516,18 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
                 <option key={f.id} value={f.id}>{f.emoji} {f.name}</option>
               ))}
             </select>
+          </Field>
+
+          {/* 단체명 */}
+          <Field label="단체명" required hint="예: 데이터과학부 / 축구동아리">
+            <input
+              type="text"
+              className="w-full px-4 py-3 rounded-xl border text-sm focus:outline-none"
+              style={{ borderColor: fTeamName ? PRIMARY : '#e5e7eb', background: '#fafafa' }}
+              placeholder="소속 단체 또는 학과명"
+              value={fTeamName}
+              onChange={e => { setFTeamName(e.target.value); setFError(''); }}
+            />
           </Field>
 
           {/* 신청자 연락처 */}
@@ -833,11 +858,12 @@ export default function SportsBookingApp({ onBack, userName }: { onBack: () => v
               ['신청일자', selectedApp.applicationDate],
               ['신청자', selectedApp.applicantName],
               ['연락처', selectedApp.applicantPhone],
+              ['단체명', selectedApp.teamName],
+              ['소속 학과/부서', selectedApp.department],
               ['대관 신청일', selectedApp.rentalDate],
               ['대관 시간', `${selectedApp.rentalStartTime} ~ ${selectedApp.rentalEndTime}`],
               ['행사명', selectedApp.eventName],
               ['신청사유', selectedApp.reason],
-              ['소속', selectedApp.department],
               ['참가인원', `${selectedApp.participantCount}명`],
             ].map(([label, value]) => (
               <div key={label} className="flex gap-3 py-1.5 border-b border-gray-50 last:border-0">
