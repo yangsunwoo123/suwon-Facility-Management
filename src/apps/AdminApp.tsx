@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PortalLogin from '../components/PortalLogin';
-import { CATEGORIES, STATUS_CONFIG, PRIORITY_COLORS } from '../data/campus';
+import { CATEGORIES, STATUS_CONFIG, PRIORITY_COLORS, ZONES } from '../data/campus';
 import { loadReports, updateReport as storeUpdateReport, loadAnnouncements, addAnnouncement, loadSportsApplications, updateSportsApplication, addPenalty, getUserPenalties, isUserSuspended, suspendUser, unsuspendUser } from '../data/store';
 import type { IssueReport, IssueStatus, ZoneId, Announcement, SportsApplication, Penalty, PenaltyReason } from '../data/types';
 import { SPORTS_FACILITIES } from '../data/sportsData';
@@ -44,6 +44,7 @@ export default function AdminApp() {
   const [annTitle, setAnnTitle] = useState('');
   const [annContent, setAnnContent] = useState('');
   const [showAnnForm, setShowAnnForm] = useState(false);
+  const [isSuper, setIsSuper] = useState(false);
   // Rental team state
   const [adminType, setAdminType] = useState<AdminType>('maintenance');
   const [sportsApps, setSportsApps] = useState<SportsApplication[]>([]);
@@ -62,7 +63,7 @@ export default function AdminApp() {
       if (adminType === 'rental') {
         setSportsApps(loadSportsApplications());
       } else {
-        const fresh = loadReports().filter(r => r.zone === selectedZone);
+        const fresh = isSuper ? loadReports() : loadReports().filter(r => r.zone === selectedZone);
         setReports(prev => {
           const newOnes = fresh.filter(nr => !prev.find(p => p.id === nr.id));
           if (newOnes.length > 0) setNotification({ visible: true, report: newOnes[0] });
@@ -85,8 +86,17 @@ export default function AdminApp() {
   }, [selectedSportsApp?.id]);
 
   const handleAdminLogin = (id: string, pw: string): boolean => {
-    // 시설 대관팀 계정
     const rentalId = id.toLowerCase();
+    // 통합 관리자 계정
+    if (rentalId === 'admin' && (pw === '1234' || pw === 'admin')) {
+      setAdminType('maintenance');
+      setIsSuper(true);
+      setAdminName('통합 관리자');
+      setReports(loadReports());
+      setScreen('dashboard');
+      return true;
+    }
+    // 시설 대관팀 계정
     if ((rentalId === 'rental' || rentalId === 'rental1' || rentalId === 'rental2') && (pw === '1234' || pw === 'admin')) {
       setAdminType('rental');
       setAdminName('시설 대관팀');
@@ -94,10 +104,11 @@ export default function AdminApp() {
       setScreen('rental-dashboard');
       return true;
     }
-    // 시설보수관리팀 계정
+    // 구역별 관리팀 계정
     const account = ADMIN_ACCOUNTS.find(a => a.id === rentalId);
     if (!account || (pw !== '1234' && pw !== 'admin')) return false;
     setAdminType('maintenance');
+    setIsSuper(false);
     setSelectedZone(account.zone);
     setAdminName(account.name);
     setReports(loadReports().filter(r => r.zone === account.zone));
@@ -666,7 +677,7 @@ export default function AdminApp() {
           <BackBtn to="dashboard" />
           <h2 className="font-extrabold text-lg flex-1" style={{ color: '#0f172a' }}>신고 목록</h2>
           <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: '#eff6ff', color: PRIMARY }}>
-            구역 {selectedZone}
+            {isSuper ? '전체 구역' : `구역 ${selectedZone}`}
           </span>
         </div>
 
@@ -711,6 +722,14 @@ export default function AdminApp() {
                       </span>
                     </div>
                     <div className="flex gap-1.5">
+                      {isSuper && (() => {
+                        const zone = ZONES.find(z => z.id === report.zone);
+                        return zone ? (
+                          <span className="text-xs px-1.5 py-0.5 rounded font-bold text-white" style={{ background: zone.color }}>
+                            {zone.id}구역
+                          </span>
+                        ) : null;
+                      })()}
                       {report.priority === 'high' && (
                         <span className="text-xs px-1.5 py-0.5 rounded font-bold text-white" style={{ background: PRIORITY_COLORS.high }}>긴급</span>
                       )}
@@ -762,7 +781,7 @@ export default function AdminApp() {
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between sticky top-0 z-10">
         <div>
-          <div className="text-xs font-bold" style={{ color: '#64748b' }}>관리자 대시보드 · 구역 {selectedZone}</div>
+          <div className="text-xs font-bold" style={{ color: '#64748b' }}>관리자 대시보드 · {isSuper ? '전체 구역' : `구역 ${selectedZone}`}</div>
           <div className="text-lg font-extrabold" style={{ color: '#0f172a' }}>{adminName}</div>
         </div>
         <div className="flex items-center gap-2">
@@ -781,7 +800,7 @@ export default function AdminApp() {
             )}
           </button>
           <button
-            onClick={() => { localStorage.removeItem('portal_autologin_admin'); setScreen('login'); setAdminName(''); setReports([]); setAdminType('maintenance'); }}
+            onClick={() => { localStorage.removeItem('portal_autologin_admin'); setScreen('login'); setAdminName(''); setReports([]); setAdminType('maintenance'); setIsSuper(false); }}
             className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{ background: '#f1f5f9' }}
             title="로그아웃"
