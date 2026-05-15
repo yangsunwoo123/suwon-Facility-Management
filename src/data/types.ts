@@ -3,6 +3,8 @@ export type IssueCategory = '시설파손' | '전기/전력' | '수도/위생' |
 export type ZoneId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 // 신고 담당 부서: env=환경관리팀(구역별), elec=전기팀, fire=소방팀, general=일반관리팀
 export type DepartmentId = 'env' | 'elec' | 'fire' | 'general';
+// 중간관리자(학과장/조교) 1차 승인 상태
+export type MidApprovalStatus = '검토중' | '1차승인' | '반려';
 
 export interface Building {
   id: string;
@@ -31,6 +33,10 @@ export interface IssueReport {
   zone: ZoneId;
   department: DepartmentId;
   status: IssueStatus;
+  midStatus?: MidApprovalStatus;
+  midManagerName?: string;
+  midManagerNote?: string;
+  midApprovedAt?: string;
   reportedBy: string;
   reportedAt: string;
   updatedAt: string;

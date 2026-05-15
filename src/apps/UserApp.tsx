@@ -114,6 +114,7 @@ export default function UserApp() {
         buildingName: selectedBuilding?.name ?? '캠퍼스 외부',
         zone: selectedBuilding?.zone ?? 'F',
         department: dept,
+        midStatus: dept === 'general' ? '1차승인' : '검토중',
         status: '접수됨',
         reportedBy: userName,
         reportedAt: new Date().toISOString(),

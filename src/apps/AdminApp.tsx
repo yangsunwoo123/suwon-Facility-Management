@@ -73,10 +73,10 @@ export default function AdminApp() {
       } else {
         const all = loadReports();
         const fresh = isSuper
-          ? all
+          ? all.filter(r => r.midStatus === '1차승인' || !r.midStatus)
           : (adminType === 'elec' || adminType === 'fire' || adminType === 'general')
-            ? all.filter(r => r.department === (adminType as DepartmentId))
-            : all.filter(r => r.zone === selectedZone && r.department === 'env');
+            ? all.filter(r => r.department === (adminType as DepartmentId) && (r.midStatus === '1차승인' || !r.midStatus))
+            : all.filter(r => r.zone === selectedZone && r.department === 'env' && (r.midStatus === '1차승인' || !r.midStatus));
         setReports(prev => {
           const newOnes = fresh.filter(nr => !prev.find(p => p.id === nr.id));
           if (newOnes.length > 0) setNotification({ visible: true, report: newOnes[0] });
@@ -106,7 +106,7 @@ export default function AdminApp() {
       setAdminType('maintenance');
       setIsSuper(true);
       setAdminName('통합 관리자 (환경관리팀)');
-      setReports(loadReports());
+      setReports(loadReports().filter(r => r.midStatus === '1차승인' || !r.midStatus));
       setScreen('dashboard');
       return true;
     }
@@ -124,7 +124,7 @@ export default function AdminApp() {
       setAdminType(deptAcc.type);
       setIsSuper(false);
       setAdminName(deptAcc.name);
-      setReports(loadReports().filter(r => r.department === deptAcc.dept));
+      setReports(loadReports().filter(r => r.department === deptAcc.dept && (r.midStatus === '1차승인' || !r.midStatus)));
       setScreen('dashboard');
       return true;
     }
@@ -135,7 +135,7 @@ export default function AdminApp() {
     setIsSuper(false);
     setSelectedZone(account.zone);
     setAdminName(account.name);
-    setReports(loadReports().filter(r => r.zone === account.zone && r.department === 'env'));
+    setReports(loadReports().filter(r => r.zone === account.zone && r.department === 'env' && (r.midStatus === '1차승인' || !r.midStatus)));
     setScreen('dashboard');
     return true;
   };

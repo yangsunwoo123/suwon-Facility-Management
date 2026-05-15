@@ -16,6 +16,17 @@ export default function LandingPage() {
       border: '#bfdbfe',
     },
     {
+      path: '/midadmin',
+      icon: '📋',
+      title: '중간관리자',
+      subtitle: 'MID-ADMIN',
+      description: '학과·건물 담당 조교/학과장이 학생 신고를 검토하고, 공문·시설보수신청서를 생성해 구역 관리팀에 전달하세요.',
+      features: ['신고 1차 검토·승인', '공문 자동 생성', '시설보수신청서 출력', '반려 및 메모 기능'],
+      color: '#7c3aed',
+      bg: '#faf5ff',
+      border: '#ddd6fe',
+    },
+    {
       path: '/admin',
       icon: '🛠',
       title: '관리자',
