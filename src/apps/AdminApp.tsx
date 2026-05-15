@@ -4,10 +4,12 @@ import PortalLogin from '../components/PortalLogin';
 import { CATEGORIES, STATUS_CONFIG, PRIORITY_COLORS, ZONES, DEPARTMENTS } from '../data/campus';
 import { loadReports, updateReport as storeUpdateReport, loadAnnouncements, addAnnouncement, loadSportsApplications, updateSportsApplication, addPenalty, getUserPenalties, isUserSuspended, suspendUser, unsuspendUser } from '../data/store';
 import type { IssueReport, IssueStatus, ZoneId, DepartmentId, Announcement, SportsApplication, Penalty, PenaltyReason } from '../data/types';
+import { buildGongmunHtml, buildFormHtml, printDoc, downloadDoc } from '../utils/docTemplates';
 import { SPORTS_FACILITIES } from '../data/sportsData';
 
 type AdminType = 'maintenance' | 'rental' | 'elec' | 'fire' | 'general';
-type Screen = 'login' | 'dashboard' | 'list' | 'detail' | 'rental-dashboard' | 'rental-detail';
+type Screen = 'login' | 'dashboard' | 'list' | 'detail' | 'doc-view' | 'rental-dashboard' | 'rental-detail';
+type DocTab = 'gongmun' | 'form';
 
 const PRIMARY = '#1a56db';
 
@@ -58,6 +60,8 @@ export default function AdminApp() {
   const [sportsApps, setSportsApps] = useState<SportsApplication[]>([]);
   const [selectedSportsApp, setSelectedSportsApp] = useState<SportsApplication | null>(null);
   const [rentalTab, setRentalTab] = useState<'pending' | 'return' | 'history'>('pending');
+  // Document view state
+  const [docTab, setDocTab] = useState<DocTab>('gongmun');
   // Penalty / suspension state
   const [userPenalties, setUserPenalties] = useState<Penalty[]>([]);
   const [showPenaltyForm, setShowPenaltyForm] = useState(false);
@@ -561,6 +565,86 @@ export default function AdminApp() {
     );
   }
 
+  // ── Doc View ──────────────────────────────────────────────────
+  if (screen === 'doc-view' && selectedReport) {
+    const r = reports.find(rep => rep.id === selectedReport.id) ?? selectedReport;
+    const managerTitle = r.midManagerName ?? '중간관리자';
+    const gongmunHtml = buildGongmunHtml(r, managerTitle, managerTitle);
+    const formHtml = buildFormHtml(r, managerTitle, managerTitle);
+    const currentHtml = docTab === 'gongmun' ? gongmunHtml : formHtml;
+    const filename = docTab === 'gongmun'
+      ? `공문_${r.id}.doc`
+      : `시설보수신청서_${r.id}.doc`;
+
+    return (
+      <div className="app-container flex flex-col min-h-screen" style={{ background: '#f8fafc' }}>
+        <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center gap-3 sticky top-0 z-10">
+          <BackBtn to="detail" />
+          <h2 className="font-extrabold text-lg flex-1" style={{ color: '#0f172a' }}>전달받은 공문</h2>
+          <span className="text-xs px-2.5 py-1 rounded-full font-bold" style={{ background: '#d1fae5', color: '#059669' }}>
+            1차승인
+          </span>
+        </div>
+
+        {/* 발신자 정보 */}
+        <div className="px-4 pt-4">
+          <div className="rounded-2xl px-4 py-3 flex items-center gap-3" style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe' }}>
+            <span className="text-2xl">📨</span>
+            <div>
+              <div className="text-xs font-bold" style={{ color: PRIMARY }}>발신: {managerTitle}</div>
+              <div className="text-sm font-extrabold" style={{ color: '#0f172a' }}>{r.title}</div>
+              {r.midApprovedAt && (
+                <div className="text-xs mt-0.5" style={{ color: '#64748b' }}>
+                  승인일: {new Date(r.midApprovedAt).toLocaleString('ko-KR')}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-4 pt-3 flex gap-2">
+          {([['gongmun', '📄 공문'], ['form', '📝 시설보수신청서']] as [DocTab, string][]).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setDocTab(key)}
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold transition"
+              style={docTab === key ? { background: PRIMARY, color: 'white' } : { background: '#f1f5f9', color: '#64748b' }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-hidden px-4 pt-3">
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden" style={{ height: 'calc(100vh - 260px)' }}>
+            <iframe
+              srcDoc={currentHtml}
+              title="공문 미리보기"
+              style={{ width: '100%', height: '100%', border: 'none' }}
+            />
+          </div>
+        </div>
+
+        <div className="px-4 py-4 space-y-2">
+          <button
+            onClick={() => printDoc(currentHtml)}
+            className="w-full py-3.5 rounded-xl font-extrabold text-white text-sm"
+            style={{ background: PRIMARY }}
+          >
+            🖨️ 인쇄 / PDF 저장
+          </button>
+          <button
+            onClick={() => downloadDoc(currentHtml, filename)}
+            className="w-full py-3 rounded-xl font-bold text-sm"
+            style={{ background: '#f1f5f9', color: '#374151' }}
+          >
+            💾 Word 파일 다운로드 (.doc)
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Detail ────────────────────────────────────────────────────
   if (screen === 'detail' && selectedReport) {
     const r = reports.find(r => r.id === selectedReport.id) || selectedReport;
@@ -602,6 +686,27 @@ export default function AdminApp() {
               <div>업데이트: {new Date(r.updatedAt).toLocaleString('ko-KR')}</div>
             </div>
           </div>
+
+          {/* 공문 첨부 — 1차승인된 신고만 표시 */}
+          {r.midStatus === '1차승인' && (
+            <button
+              onClick={() => { setDocTab('gongmun'); setScreen('doc-view'); }}
+              className="w-full rounded-2xl p-4 border flex items-center gap-3 active:scale-98 transition"
+              style={{ background: '#eff6ff', borderColor: '#bfdbfe' }}
+            >
+              <span className="text-2xl flex-shrink-0">📨</span>
+              <div className="flex-1 text-left">
+                <div className="text-sm font-extrabold" style={{ color: PRIMARY }}>공문·시설보수신청서 확인</div>
+                <div className="text-xs mt-0.5" style={{ color: '#64748b' }}>
+                  발신: {r.midManagerName ?? '중간관리자'}
+                  {r.midApprovedAt && ` · ${new Date(r.midApprovedAt).toLocaleDateString('ko-KR')}`}
+                </div>
+              </div>
+              <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: PRIMARY, color: 'white' }}>
+                열기 →
+              </span>
+            </button>
+          )}
 
           {/* Status change */}
           <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
