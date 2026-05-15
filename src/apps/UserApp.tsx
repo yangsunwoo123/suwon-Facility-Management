@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import PortalLogin from '../components/PortalLogin';
-import { BUILDINGS, CATEGORIES, STATUS_CONFIG, ZONES, PRIORITY_COLORS } from '../data/campus';
+import { BUILDINGS, CATEGORIES, STATUS_CONFIG, ZONES, PRIORITY_COLORS, DEPARTMENTS } from '../data/campus';
 import { loadReports, addReport as storeAddReport, loadAnnouncements } from '../data/store';
-import type { IssueCategory, IssueReport, Announcement } from '../data/types';
+import type { IssueCategory, IssueReport, Announcement, DepartmentId } from '../data/types';
 import SportsBookingApp from './SportsBookingApp';
 
 type Screen = 'home' | 'report' | 'myreports' | 'detail' | 'login' | 'announcements';
@@ -56,6 +56,7 @@ export default function UserApp() {
     location: '',
     description: '',
     imagePreview: '',
+    department: '' as DepartmentId | '',
   });
   const [submitted, setSubmitted] = useState(false);
 
@@ -101,15 +102,18 @@ export default function UserApp() {
     const zone = selectedBuilding ? ZONES.find(z => z.id === selectedBuilding.zone) : null;
 
     const handleSubmit = () => {
-      if (!form.title || !form.category || !form.buildingId) return;
+      if (!form.title || !form.department) return;
+      if (form.department !== 'general' && !form.buildingId) return;
+      const dept = form.department as DepartmentId;
       const newReport: IssueReport = {
         id: `RPT-U${Date.now()}`,
         title: form.title,
-        category: form.category,
+        category: (form.category as IssueCategory) || '기타',
         description: form.description,
-        buildingId: form.buildingId,
-        buildingName: selectedBuilding?.name ?? '',
+        buildingId: form.buildingId || 'outdoor',
+        buildingName: selectedBuilding?.name ?? '캠퍼스 외부',
         zone: selectedBuilding?.zone ?? 'F',
+        department: dept,
         status: '접수됨',
         reportedBy: userName,
         reportedAt: new Date().toISOString(),
@@ -138,20 +142,28 @@ export default function UserApp() {
             >✅</div>
             <h2 className="text-xl font-extrabold mb-2" style={{ color: '#0f172a' }}>신고가 접수되었습니다</h2>
             <p className="text-gray-500 text-sm mb-3 leading-relaxed">
-              해당 구역 관리팀에게 자동으로 전달됩니다.
+              담당 팀에게 자동으로 전달됩니다.
             </p>
-            {zone && (
-              <div
-                className="px-4 py-2 rounded-full text-sm font-bold text-white mb-6"
-                style={{ background: zone.color }}
-              >
-                담당: {zone.adminName}
-              </div>
-            )}
+            {(() => {
+              const dept = DEPARTMENTS.find(d => d.id === form.department);
+              if (!dept) return null;
+              if (dept.id === 'env' && zone) {
+                return (
+                  <div className="px-4 py-2 rounded-full text-sm font-bold text-white mb-6" style={{ background: zone.color }}>
+                    담당: {zone.adminName}
+                  </div>
+                );
+              }
+              return (
+                <div className="px-4 py-2 rounded-full text-sm font-bold text-white mb-6" style={{ background: dept.color }}>
+                  {dept.icon} 담당: {dept.name}
+                </div>
+              );
+            })()}
             <button
               onClick={() => {
                 setSubmitted(false);
-                setForm({ title: '', category: '', buildingId: '', location: '', description: '', imagePreview: '' });
+                setForm({ title: '', category: '', buildingId: '', location: '', description: '', imagePreview: '', department: '' });
                 setScreen('home');
               }}
               className="w-full py-3.5 rounded-xl font-bold text-white"
@@ -181,7 +193,33 @@ export default function UserApp() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
-          {/* Category */}
+          {/* Department */}
+          <div>
+            <label className="text-sm font-extrabold mb-2 block" style={{ color: '#0f172a' }}>
+              신고 대상 부서 <span style={{ color: PRIMARY }}>*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {DEPARTMENTS.map(dept => (
+                <button
+                  key={dept.id}
+                  onClick={() => setForm(f => ({ ...f, department: dept.id, buildingId: '', category: '' }))}
+                  className="py-3 px-3 rounded-2xl border-2 text-left transition"
+                  style={
+                    form.department === dept.id
+                      ? { borderColor: dept.color, background: dept.color + '15' }
+                      : { borderColor: '#e2e8f0', background: 'white' }
+                  }
+                >
+                  <div className="text-xl mb-1">{dept.icon}</div>
+                  <div className="text-xs font-extrabold" style={{ color: form.department === dept.id ? dept.color : '#374151' }}>{dept.name}</div>
+                  <div className="text-xs mt-0.5" style={{ color: '#94a3b8' }}>{dept.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Category — 환경관리팀·전기팀·소방팀일 때만 표시 */}
+          {form.department && form.department !== 'general' && (
           <div>
             <label className="text-sm font-extrabold mb-2 block" style={{ color: '#0f172a' }}>
               문제 유형 <span style={{ color: PRIMARY }}>*</span>
@@ -209,6 +247,7 @@ export default function UserApp() {
               ))}
             </div>
           </div>
+          )}
 
           {/* Title */}
           <div>
@@ -224,7 +263,8 @@ export default function UserApp() {
             />
           </div>
 
-          {/* Building */}
+          {/* Building — 일반관리팀(야외/도로)일 때는 숨김 */}
+          {form.department && form.department !== 'general' && (
           <div>
             <label className="text-sm font-extrabold mb-1.5 block" style={{ color: '#0f172a' }}>
               건물 선택 <span style={{ color: PRIMARY }}>*</span>
@@ -237,14 +277,14 @@ export default function UserApp() {
             >
               <option value="">건물을 선택하세요</option>
               {ZONES.map(z => (
-                <optgroup key={z.id} label={`구역 ${z.id}: ${z.name}`}>
+                <optgroup key={z.id} label={`${z.id}구역 — ${BUILDINGS.filter(b => b.zone === z.id).map(b => b.name).join(', ')}`}>
                   {BUILDINGS.filter(b => b.zone === z.id).map(b => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </optgroup>
               ))}
             </select>
-            {zone && (
+            {form.department === 'env' && zone && (
               <div
                 className="mt-2 text-xs px-3 py-2 rounded-xl font-medium"
                 style={{ background: zone.color + '15', color: zone.color }}
@@ -253,6 +293,7 @@ export default function UserApp() {
               </div>
             )}
           </div>
+          )}
 
           {/* Location */}
           <div>
@@ -312,7 +353,7 @@ export default function UserApp() {
         <div className="px-4 py-4 bg-white border-t border-gray-100">
           <button
             onClick={handleSubmit}
-            disabled={!form.title || !form.category || !form.buildingId}
+            disabled={!form.title || !form.department || (form.department !== 'general' && !form.buildingId)}
             className="w-full py-3.5 rounded-xl font-extrabold text-base transition active:scale-95 disabled:opacity-40 text-white"
             style={{ background: PRIMARY }}
           >

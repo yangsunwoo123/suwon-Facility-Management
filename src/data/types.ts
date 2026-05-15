@@ -1,6 +1,8 @@
 export type IssueStatus = '접수됨' | '처리중' | '완료' | '보류';
 export type IssueCategory = '시설파손' | '전기/전력' | '수도/위생' | '청결/미화' | '안전위험' | '기타';
 export type ZoneId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+// 신고 담당 부서: env=환경관리팀(구역별), elec=전기팀, fire=소방팀, general=일반관리팀
+export type DepartmentId = 'env' | 'elec' | 'fire' | 'general';
 
 export interface Building {
   id: string;
@@ -27,6 +29,7 @@ export interface IssueReport {
   buildingId: string;
   buildingName: string;
   zone: ZoneId;
+  department: DepartmentId;
   status: IssueStatus;
   reportedBy: string;
   reportedAt: string;

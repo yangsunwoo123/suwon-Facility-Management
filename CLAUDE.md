@@ -55,16 +55,25 @@
 | 완료 | `#dcfce7` | `#16a34a` |
 | 보류 | `#fee2e2` | `#dc2626` |
 
-**구역 색상 (campus.ts `ZONES`)**
+**구역 색상 (campus.ts `ZONES`) — 실제 수원대 관리구역 기준**
 
-| Zone | 이름 | 색상 |
-|------|------|------|
-| A | 공학관 구역 | `#e57c00` |
-| B | 혁신·연구 구역 | `#7c3aed` |
-| C | 중앙·학생 구역 | `#0f9d58` |
-| D | 예술·문화 구역 | `#e91e63` |
-| E | 인문·글로벌 구역 | `#1a73e8` |
-| F | 본부·행정 구역 | `#607d8b` |
+| Zone | 이름 | 색상 | 주요 건물 |
+|------|------|------|-----------|
+| A | 1구역 | `#e57c00` | 인문사회융합대학, 미래혁신관, 체육관 |
+| B | 2구역 | `#7c3aed` | 고운첨단과학기술연구원, 혁신공과대학, 제1공학관 |
+| C | 3구역 | `#0f9d58` | 제2·3·4공학관, ACE교육관, 조형관, 학생회관, 디자인아트대학 |
+| D | 4구역 | `#e91e63` | 중앙도서관, 지능형SW융합대학, 사회관, 라이프케어, 벨칸토아트센터 |
+| E | 5구역 | `#1a73e8` | 야외음악당, 음악테크놀로지대학, 아마랜스홀, 기숙사, 경영공학대학 |
+| F | 6구역 | `#607d8b` | 대학본부, 글로벌인재대학, ROTC |
+
+**부서 색상 (campus.ts `DEPARTMENTS`)**
+
+| DepartmentId | 팀명 | 색상 | 담당 범위 |
+|---|---|---|---|
+| `env` | 환경관리팀 | `#1a56db` | 건물 내부 시설 (구역별) |
+| `elec` | 전기팀 | `#d97706` | 전기·전력 (전체 건물) |
+| `fire` | 소방팀 | `#dc2626` | 소방시설 (전체 건물) |
+| `general` | 일반관리팀 | `#16a34a` | 도로·야외환경·계단 등 |
 
 ---
 
@@ -114,10 +123,13 @@ suwon-facility-app/
 | 앱 | 아이디 | 비밀번호 | 비고 |
 |----|--------|----------|------|
 | UserApp | 아무 값 | 아무 값 | `\|\| true` 로 항상 통과 (데모 모드) |
-| AdminApp | `mgr_a` ~ `mgr_f` | `1234` | 각 구역(A~F) 관리자 |
+| AdminApp | `admin` | `1234` | 통합 관리자 (환경관리팀 전체 구역) |
+| AdminApp | `mgr_1` ~ `mgr_6` | `1234` | 환경관리팀 1~6구역 관리자 |
+| AdminApp | `elec_mgr` | `1234` | 전기팀 (전체 건물 전기 신고) |
+| AdminApp | `fire_mgr` | `1234` | 소방팀 (전체 건물 소방 신고) |
+| AdminApp | `general_mgr` | `1234` | 일반관리팀 (도로·야외환경 신고) |
+| AdminApp | `rental` / `rental1` / `rental2` | `1234` | 시설 대관팀 |
 | DevApp | `dev` | `dev2024` | |
-
-AdminApp은 로그인 ID에서 구역을 자동 감지 (`mgr_a` → Zone A).
 
 ---
 
@@ -243,18 +255,30 @@ UserApp 신고 제출
 
 ---
 
-## 캠퍼스 구역 & 건물 (campus.ts)
+## 캠퍼스 구역 & 건물 (campus.ts) — 실제 수원대 관리구역 기준
 
-| Zone | 이름 | 색상 | 주요 건물 |
-|------|------|------|-----------|
-| A | 공학관 구역 | `#e57c00` | eng1~4, ace, inno |
-| B | 혁신·연구 구역 | `#7c3aed` | future, research |
-| C | 중앙·학생 구역 | `#0f9d58` | student, library, gym, social |
-| D | 예술·문화 구역 | `#e91e63` | belcanto, outdoor, music, culture, design, formative |
-| E | 인문·글로벌 구역 | `#1a73e8` | human, global, lifecare, swfusion, biz |
-| F | 본부·행정 구역 | `#607d8b` | main, dorm, rotc |
+| Zone | 이름 | 건물 ID 목록 |
+|------|------|-------------|
+| A | 1구역 | human, future, gym |
+| B | 2구역 | research, inno, eng1 |
+| C | 3구역 | eng2, eng3, eng4, ace, formative, student, design |
+| D | 4구역 | library, swfusion, social, lifecare, belcanto |
+| E | 5구역 | outdoor, music, amaranth, dorm, biz |
+| F | 6구역 | main, global, rotc |
 
 전체 26개 건물 — `campus.ts`의 `BUILDINGS` 배열 참고.
+
+## 신고 라우팅 구조 (department 필드)
+
+```
+IssueReport.department:
+  'env'     → 환경관리팀 (zone 필드로 1~6구역 분기)
+  'elec'    → 전기팀     (건물 무관, 전기 전담)
+  'fire'    → 소방팀     (건물 무관, 소방 전담)
+  'general' → 일반관리팀 (야외·도로·계단 등)
+```
+
+UserApp 신고폼: 부서 선택 → 환경관리팀은 건물 선택 필수, 일반관리팀은 건물 선택 생략.
 
 ---
 

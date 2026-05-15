@@ -8,7 +8,8 @@ export const MOCK_REPORTS: IssueReport[] = [
     description: '3층 남자화장실 두 번째 칸 수도꼭지가 돌아가지 않습니다. 물이 계속 흘러 낭비되고 있습니다.',
     buildingId: 'eng1',
     buildingName: '제1공학관',
-    zone: 'A',
+    zone: 'B',
+    department: 'env',
     status: '처리중',
     reportedBy: '김민준',
     reportedAt: '2026-05-05T09:23:00',
@@ -16,7 +17,7 @@ export const MOCK_REPORTS: IssueReport[] = [
     location: '3층 남자화장실',
     priority: 'high',
     comments: [
-      { id: 'c1', author: '공학관 관리팀', role: 'admin', text: '확인했습니다. 오늘 오후 수리 예정입니다.', createdAt: '2026-05-05T11:00:00' }
+      { id: 'c1', author: '환경관리팀 2구역', role: 'admin', text: '확인했습니다. 오늘 오후 수리 예정입니다.', createdAt: '2026-05-05T11:00:00' }
     ]
   },
   {
@@ -26,7 +27,8 @@ export const MOCK_REPORTS: IssueReport[] = [
     description: '열람실 창가 쪽 형광등 3개가 계속 깜빡여서 공부하기 어렵습니다.',
     buildingId: 'library',
     buildingName: '중앙도서관',
-    zone: 'C',
+    zone: 'D',
+    department: 'elec',
     status: '접수됨',
     reportedBy: '이수진',
     reportedAt: '2026-05-05T14:10:00',
@@ -43,6 +45,7 @@ export const MOCK_REPORTS: IssueReport[] = [
     buildingId: 'student',
     buildingName: '학생회관',
     zone: 'C',
+    department: 'general',
     status: '완료',
     reportedBy: '박지호',
     reportedAt: '2026-05-04T10:00:00',
@@ -50,7 +53,7 @@ export const MOCK_REPORTS: IssueReport[] = [
     location: '정문 앞 보도',
     priority: 'high',
     comments: [
-      { id: 'c2', author: '학생복지 관리팀', role: 'admin', text: '보도블럭 교체 완료했습니다.', createdAt: '2026-05-05T16:00:00' }
+      { id: 'c2', author: '일반관리팀', role: 'admin', text: '보도블럭 교체 완료했습니다.', createdAt: '2026-05-05T16:00:00' }
     ]
   },
   {
@@ -60,7 +63,8 @@ export const MOCK_REPORTS: IssueReport[] = [
     description: '2호 엘리베이터 운행 중 금속 마찰음이 납니다.',
     buildingId: 'future',
     buildingName: '미래혁신관',
-    zone: 'B',
+    zone: 'A',
+    department: 'env',
     status: '접수됨',
     reportedBy: '최현우',
     reportedAt: '2026-05-06T08:30:00',
@@ -76,7 +80,8 @@ export const MOCK_REPORTS: IssueReport[] = [
     description: '1층 세탁실 3번 세탁기가 작동하지 않습니다.',
     buildingId: 'dorm',
     buildingName: '기숙사',
-    zone: 'F',
+    zone: 'E',
+    department: 'env',
     status: '처리중',
     reportedBy: '강민서',
     reportedAt: '2026-05-05T20:15:00',
@@ -92,7 +97,8 @@ export const MOCK_REPORTS: IssueReport[] = [
     description: '야간에 조형관 앞 가로등이 켜지지 않아 어둡습니다.',
     buildingId: 'formative',
     buildingName: '조형관',
-    zone: 'D',
+    zone: 'C',
+    department: 'elec',
     status: '보류',
     reportedBy: '윤아름',
     reportedAt: '2026-05-04T22:00:00',
@@ -100,7 +106,7 @@ export const MOCK_REPORTS: IssueReport[] = [
     location: '조형관 정문 앞',
     priority: 'medium',
     comments: [
-      { id: 'c3', author: '예술·문화 관리팀', role: 'admin', text: '부품 발주 중입니다. 3일 내 처리 예정.', createdAt: '2026-05-05T09:00:00' }
+      { id: 'c3', author: '전기팀', role: 'admin', text: '부품 발주 중입니다. 3일 내 처리 예정.', createdAt: '2026-05-05T09:00:00' }
     ]
   },
   {
@@ -110,7 +116,8 @@ export const MOCK_REPORTS: IssueReport[] = [
     description: '302호 강의실 에어컨이 작동하지 않아 수업 중 너무 덥습니다.',
     buildingId: 'inno',
     buildingName: '혁신공과대학',
-    zone: 'A',
+    zone: 'B',
+    department: 'elec',
     status: '처리중',
     reportedBy: '정서연',
     reportedAt: '2026-05-07T10:00:00',
@@ -127,6 +134,7 @@ export const MOCK_REPORTS: IssueReport[] = [
     buildingId: 'belcanto',
     buildingName: '벨칸토아트센터',
     zone: 'D',
+    department: 'env',
     status: '접수됨',
     reportedBy: '한지민',
     reportedAt: '2026-05-08T09:00:00',
