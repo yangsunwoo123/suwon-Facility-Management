@@ -61,11 +61,11 @@ export default function UserApp() {
   const [submitted, setSubmitted] = useState(false);
 
   const USER_ACCOUNTS: Record<string, string> = {
-    'sw2024001': 'Suwon1!',
-    'sw2024002': 'Suwon2!',
-    'sw2024003': 'Suwon3!',
-    'sw2024004': 'Suwon4!',
-    'sw2024005': 'Suwon5!',
+    'user1': '1234',
+    'user2': '1234',
+    'user3': '1234',
+    'user4': '1234',
+    'user5': '1234',
   };
 
   // ── Login ─────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ export default function UserApp() {
           appType="user"
           forgotPasswordUrl="https://portal.suwon.ac.kr/enview/index.html"
           onLogin={(id, pw) => {
-            if (USER_ACCOUNTS[id] === pw || true) {
+            if (USER_ACCOUNTS[id] === pw) {
               const all = loadReports();
               setUserName(id);
               setAllReports(all);

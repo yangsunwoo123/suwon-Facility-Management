@@ -132,7 +132,7 @@ export default function DevApp() {
   }, [logs, liveMode]);
 
   const handleDevLogin = (id: string, pw: string): boolean => {
-    if ((id === 'dev' || id === 'developer') && (pw === 'dev2024' || pw === 'admin')) {
+    if ((id === 'dev' || id === 'developer') && pw === '1234') {
       setScreen('dashboard');
       return true;
     }
