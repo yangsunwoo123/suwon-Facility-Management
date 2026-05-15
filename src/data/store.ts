@@ -22,6 +22,7 @@ export function loadReports(): IssueReport[] {
 
 export function saveReports(reports: IssueReport[]): void {
   localStorage.setItem(KEY, JSON.stringify(reports));
+  window.dispatchEvent(new StorageEvent('storage', { key: KEY }));
 }
 
 export function addReport(report: IssueReport): void {

@@ -261,7 +261,7 @@ export default function MiddleAdminApp() {
       midApprovedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
-    window.dispatchEvent(new Event('storage'));
+    // saveReports already dispatches StorageEvent — refreshReports picks it up
     refreshReports();
     setNote('');
     setScreen('dashboard');
@@ -275,7 +275,6 @@ export default function MiddleAdminApp() {
       status: '보류',
       updatedAt: new Date().toISOString(),
     });
-    window.dispatchEvent(new Event('storage'));
     refreshReports();
     setNote('');
     setScreen('dashboard');
